@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1C1A17">
+<title>Matribox Remote</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- Token ---------- */
+:root {
+  --tolex: #1C1A17;      /* fondo: nero caldo da amplificatore */
+  --panel: #27241F;
+  --panel-2: #322E28;
+  --line: #45403700;
+  --rule: #454037;
+  --cream: #F1EBDF;      /* testo */
+  --dust: #A69E8F;       /* testo secondario */
+  --brass: #D9A63E;      /* azioni principali */
+  --brass-ink: #241A05;
+  --danger: #E0574F;
+  --ok: #57C27A;
+
+  /* colori dei blocchi, come sul pedale */
+  --c-FX1: #4F7DF2; --c-FX2: #E5484D; --c-AMP: #F08A24; --c-NR: #B8B4AC; --c-CAB: #D8C23A;
+  --c-EQ: #3DBE6B;  --c-MOD: #7470F5; --c-DLY: #B45EEF; --c-RVB: #2EC4B4;
+
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --text: "Barlow", system-ui, "Segoe UI", Roboto, sans-serif;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
+  --tap: 52px;
+  --bar: 72px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--tolex); color: var(--cream); font: 16px/1.45 var(--text); }
+body { -webkit-tap-highlight-color: transparent; padding-bottom: calc(var(--bar) + env(safe-area-inset-bottom)); }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; touch-action: manipulation; border: 0; background: none; }
+button:disabled { opacity: .35; cursor: default; }
+:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.muted { color: var(--dust); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+/* ---------- Barra superiore ---------- */
+.top { display: flex; align-items: center; gap: 14px; padding: 14px 20px; max-width: 1180px; margin: 0 auto; }
+.brand { font: 700 20px/1 var(--display); letter-spacing: .02em; }
+.brand span { color: var(--dust); font-weight: 500; }
+.link { margin-left: auto; display: flex; align-items: center; gap: 10px; color: var(--dust); font-size: 15px; }
+.link i { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 4px #E0574F22; }
+.link.ok i { background: var(--ok); box-shadow: 0 0 0 4px #57C27A22; }
+.btn { height: var(--tap); padding: 0 20px; border-radius: var(--r-md); background: var(--panel-2); font-weight: 600; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn.primary { background: var(--brass); color: var(--brass-ink); }
+.btn.small { height: 40px; padding: 0 14px; font-size: 15px; }
+
+/* ---------- Viste ---------- */
+.view { display: none; }
+.view.active { display: block; }
+section.block { margin: 0 0 22px; }
+h2 { font: 600 22px/1.1 var(--display); margin: 0 0 12px; letter-spacing: .01em; }
+.hint { color: var(--dust); font-size: 14px; margin: 8px 0 0; max-width: 70ch; }
+
+/* ---------- Stato non collegato ---------- */
+.empty { text-align: center; padding: 64px 20px; }
+.empty h2 { font-size: 34px; }
+.empty p { color: var(--dust); max-width: 46ch; margin: 0 auto 22px; }
+
+/* ---------- Testata del preset ---------- */
+.stage { display: grid; grid-template-columns: var(--tap) 1fr var(--tap); gap: 16px; align-items: center; padding: 8px 0 18px; }
+.nav { height: 96px; border-radius: var(--r-lg); background: var(--panel); font-size: 30px; color: var(--dust); }
+.nav:active:not(:disabled) { color: var(--cream); background: var(--panel-2); }
+.who { min-width: 0; }
+.slot { font: 700 22px/1 var(--display); color: var(--brass); letter-spacing: .04em; }
+.name { font: 700 clamp(44px, 7vw, 76px)/.95 var(--display); margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 10px; color: var(--dust); }
+.dirty { display: none; color: var(--brass); font-weight: 600; }
+.dirty.on { display: inline; }
+.meta .btn { margin-left: auto; }
+
+/* ---------- Catena del segnale (elemento principale) ---------- */
+.chain { position: relative; display: grid; grid-template-columns: repeat(9, minmax(84px, 1fr)); gap: 14px;
+  overflow-x: auto; padding: 8px 2px 14px; scrollbar-width: thin; scrollbar-color: #5B5447 transparent; }
+.chain::before { content: ""; position: absolute; left: 20px; right: 20px; top: 50%; height: 4px; border-radius: 2px;
+  background: #5B5447; box-shadow: 0 2px 0 #0007; }
+.pedal { --c: var(--dust); position: relative; display: grid; grid-template-rows: auto 1fr; border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c) 14%, var(--panel)); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+  min-height: 148px; overflow: hidden; }
+.pedal.off { background: var(--panel); border-color: #ffffff0f; }
+.pedal.sel { border-color: var(--c); box-shadow: 0 0 0 2px var(--c); }
+.led { height: 58px; display: grid; place-items: center; }
+.led i { width: 18px; height: 18px; border-radius: 50%; background: #3a3630; box-shadow: inset 0 1px 2px #0008; transition: background .15s, box-shadow .15s; }
+.pedal:not(.off) .led i { background: var(--c); box-shadow: 0 0 14px var(--c), 0 0 2px #fff8 inset; }
+.pedal .body { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; text-align: left;
+  padding: 8px 10px 12px; border-top: 1px solid #00000040; }
+.pedal .mod { font: 700 24px/1 var(--display); color: var(--c); }
+.pedal.off .mod { color: var(--dust); }
+.pedal .model { font-size: 13px; color: var(--dust); margin-top: 4px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pedal .fs { position: absolute; top: 8px; right: 8px; font: 600 12px/1 var(--display); color: var(--dust);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 3px 5px; }
+
+/* ---------- Pannello del blocco selezionato ---------- */
+.detail { --c: var(--brass); background: var(--panel); border-radius: var(--r-lg); padding: 18px 20px 22px;
+  border-top: 4px solid var(--c); }
+.detail-head { display: grid; grid-template-columns: auto 1fr auto; gap: 14px 18px; align-items: center; }
+.detail-head .mod { font: 700 40px/1 var(--display); color: var(--c); }
+select.field { height: var(--tap); width: 100%; border-radius: var(--r-md); background: var(--panel-2); border: 1px solid var(--rule);
+  padding: 0 14px; color: var(--cream); }
+.power { height: var(--tap); min-width: 132px; border-radius: 999px; padding: 0 18px; font-weight: 600;
+  display: flex; align-items: center; gap: 10px; background: var(--panel-2); color: var(--dust); }
+.power i { width: 14px; height: 14px; border-radius: 50%; background: #3a3630; }
+.power.on { color: var(--cream); }
+.power.on i { background: var(--c); box-shadow: 0 0 10px var(--c); }
+.seg { display: inline-flex; background: var(--panel-2); border-radius: var(--r-md); padding: 4px; gap: 4px; }
+.seg button { height: 44px; padding: 0 16px; border-radius: var(--r-sm); color: var(--dust); font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--cream); color: var(--tolex); }
+.row-fs { display: flex; align-items: center; gap: 14px; margin: 16px 0 6px; flex-wrap: wrap; }
+.row-fs .muted { font-size: 14px; }
+.params { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px 28px; margin-top: 16px; }
+.prm { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 4px 10px; }
+.prm label { color: var(--dust); }
+.prm output { font: 600 20px/1 var(--display); font-variant-numeric: tabular-nums; }
+.prm .field { grid-column: 1 / -1; }
+
+/* slider */
+input[type=range] { -webkit-appearance: none; appearance: none; grid-column: 1 / -1; width: 100%; height: 40px; background: transparent; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--c, var(--brass)) var(--p, 50%), #45403799 var(--p, 50%)); }
+input[type=range]::-moz-range-track { height: 8px; border-radius: 4px; background: #45403799; }
+input[type=range]::-moz-range-progress { height: 8px; border-radius: 4px; background: var(--c, var(--brass)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -11px; border-radius: 50%;
+  background: var(--cream); box-shadow: 0 2px 6px #0009; border: 0; }
+input[type=range]::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: var(--cream); border: 0; box-shadow: 0 2px 6px #0009; }
+
+/* ---------- Impostazioni del preset ---------- */
+.globals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; margin-top: 22px; }
+
+/* ---------- Scaletta ---------- */
+.setlist { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; }
+.chip { flex: 0 0 auto; min-width: 150px; height: 64px; padding: 0 16px; border-radius: var(--r-md); background: var(--panel);
+  text-align: left; display: flex; flex-direction: column; justify-content: center; }
+.chip b { font: 600 14px/1 var(--display); color: var(--brass); letter-spacing: .04em; }
+.chip span { font: 600 20px/1.15 var(--display); white-space: nowrap; }
+.chip.active { background: var(--brass); color: var(--brass-ink); }
+.chip.active b { color: var(--brass-ink); }
+
+/* ---------- Libreria ---------- */
+.lib-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.lib-bar input { flex: 1 1 220px; height: var(--tap); border-radius: var(--r-md); border: 1px solid var(--rule);
+  background: var(--panel); padding: 0 16px; color: var(--cream); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.item { display: grid; grid-template-columns: 1fr 44px; align-items: center; background: var(--panel); border-radius: var(--r-md); min-height: 64px; }
+.item .go { text-align: left; padding: 8px 4px 8px 14px; min-width: 0; height: 100%; }
+.item .go b { display: block; font: 600 14px/1 var(--display); color: var(--dust); letter-spacing: .04em; }
+.item .go span { display: block; font: 600 19px/1.2 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .star { height: 100%; color: #6d665a; font-size: 22px; }
+.item .star[aria-pressed="true"] { color: var(--brass); }
+.item.active { box-shadow: inset 0 0 0 2px var(--brass); }
+.item.active .go b { color: var(--brass); }
+
+/* ---------- Batteria ---------- */
+.drum { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.big-play { width: 100%; height: 120px; border-radius: var(--r-lg); background: var(--panel); font: 700 34px/1 var(--display);
+  display: flex; align-items: center; justify-content: center; gap: 14px; }
+.big-play.on { background: var(--ok); color: #062611; }
+.tempo { background: var(--panel); border-radius: var(--r-lg); padding: 16px 18px; }
+.tempo-read { display: flex; align-items: baseline; gap: 8px; }
+.tempo-read b { font: 700 72px/1 var(--display); font-variant-numeric: tabular-nums; }
+.tempo-btns { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 8px; margin: 10px 0 12px; }
+.tempo-btns .btn { height: 60px; font-size: 22px; }
+
+/* ---------- Registra ---------- */
+.rec-main { display: grid; grid-template-columns: 140px 1fr; gap: 20px; align-items: center; background: var(--panel);
+  border-radius: var(--r-lg); padding: 18px; }
+.rec-btn { width: 120px; height: 120px; border-radius: 50%; background: var(--panel-2); display: grid; place-items: center; }
+.rec-btn i { width: 44px; height: 44px; border-radius: 50%; background: var(--danger); transition: border-radius .15s; }
+.rec-btn.on i { border-radius: 8px; width: 38px; height: 38px; }
+.rec-time { font: 700 56px/1 var(--display); font-variant-numeric: tabular-nums; }
+.meter { height: 12px; background: var(--panel-2); border-radius: 6px; overflow: hidden; margin-top: 12px; }
+.meter div { height: 100%; width: 0; background: var(--ok); transition: width .05s linear; }
+.meter div.clip { background: var(--danger); }
+.input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 14px; }
+.take { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.take b { grid-column: 1 / -1; font: 600 19px/1 var(--display); }
+.take audio { width: 100%; height: 44px; }
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+
+/* ---------- Accordatore ---------- */
+.tuner { background: var(--panel); border-radius: var(--r-lg); padding: 26px 20px; text-align: center; }
+.tu-note { font: 700 120px/1 var(--display); }
+.tuner.intune .tu-note { color: var(--ok); }
+.tu-scale { position: relative; height: 34px; margin: 18px 6%; }
+.tu-scale::before { content: ""; position: absolute; inset: 14px 0; border-radius: 3px; background: var(--panel-2); }
+.tu-mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--dust); }
+.tu-needle { position: absolute; left: 50%; top: 0; width: 8px; height: 34px; margin-left: -4px; border-radius: 4px; background: var(--brass); transition: left .08s linear; }
+.tuner.intune .tu-needle { background: var(--ok); }
+.tu-cents { color: var(--dust); min-height: 22px; font-variant-numeric: tabular-nums; }
+.tu-ctrl { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+.tu-ctrl input { width: 76px; height: 44px; border-radius: var(--r-sm); border: 1px solid var(--rule); background: var(--panel-2); color: var(--cream); padding: 0 10px; }
+
+/* ---------- Barra di navigazione ---------- */
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+  display: grid; grid-template-columns: repeat(5, 1fr); background: #15130F; border-top: 1px solid #ffffff0d; z-index: 5; }
+.tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--dust); font-size: 14px; font-weight: 600; }
+.tabs svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabs button[aria-current="page"] { color: var(--brass); }
+
+/* ---------- Finestre e avvisi ---------- */
+dialog { border: 0; border-radius: var(--r-lg); background: var(--panel); color: var(--cream); padding: 22px; width: min(440px, 92vw); }
+dialog::backdrop { background: #000000a6; }
+dialog h2 { font-size: 28px; }
+dialog input { width: 100%; height: var(--tap); border-radius: var(--r-md); border: 1px solid var(--rule); background: var(--panel-2);
+  color: var(--cream); padding: 0 14px; margin: 6px 0 4px; font-size: 20px; }
+dialog .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.toast { position: fixed; left: 50%; bottom: calc(var(--bar) + 16px); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--cream); color: var(--tolex); padding: 12px 18px; border-radius: var(--r-md); font-weight: 600; transition: .2s; z-index: 10; max-width: 90vw; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+details.diag { margin-top: 26px; color: var(--dust); }
+details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.log { font: 12px/1.5 Consolas, ui-monospace, monospace; background: var(--panel); border-radius: var(--r-md); padding: 12px;
+  max-height: 200px; overflow: auto; white-space: pre-wrap; user-select: text; }
+
+/* ---------- Adattamenti ---------- */
+@media (max-width: 900px) {
+  .chain { grid-template-columns: repeat(9, minmax(64px, 1fr)); gap: 9px; }
+  .pedal { min-height: 128px; }
+  .pedal .mod { font-size: 21px; }
+  .pedal .body { padding: 6px 8px 10px; }
+}
+@media (max-width: 760px) {
+  .wrap, .top { padding-left: 16px; padding-right: 16px; }
+  .stage { grid-template-columns: 52px 1fr 52px; gap: 10px; }
+  .nav { height: 80px; }
+  .chain { grid-template-columns: repeat(9, 84px); }
+  .detail-head { grid-template-columns: 1fr auto; }
+  .detail-head select { grid-column: 1 / -1; grid-row: 2; }
+  .drum { grid-template-columns: 1fr; }
+  .rec-main { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .brand span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">Matribox <span>Remote</span></div>
+  <div class="link" id="link" role="status"><i></i><span id="linkText">Non collegato</span></div>
+  <button class="btn small" id="connectBtn">Collega</button>
+</header>
+
+<main class="wrap">
+
+  <!-- ===== Suona ===== -->
+  <div class="view active" id="v-play">
+    <div class="empty" id="emptyPlay">
+      <h2>Collega il Matribox</h2>
+      <p>Collega il pedale via USB, poi tocca Collega e consenti l'accesso MIDI. La pagina legge da sola il preset attivo.</p>
+      <button class="btn primary" id="connectBig">Collega</button>
+    </div>
+
+    <div id="playArea" hidden>
+      <section class="stage" aria-label="Preset attivo">
+        <button class="nav" id="prevBtn" aria-label="Preset precedente">‹</button>
+        <div class="who">
+          <div class="slot" id="curSlot">--</div>
+          <div class="name" id="curName">Preset</div>
+          <div class="meta">
+            <span id="readState">Lettura del preset</span>
+            <span class="dirty" id="dirty">Modificato, non salvato</span>
+            <button class="btn small" id="saveOpen">Salva</button>
+          </div>
+        </div>
+        <button class="nav" id="nextBtn" aria-label="Preset successivo">›</button>
+      </section>
+
+      <section class="block" aria-label="Catena del segnale">
+        <div class="chain" id="chain"></div>
+      </section>
+
+      <section class="block detail" id="detail" aria-live="polite"></section>
+
+      <section class="block">
+        <div class="globals">
+          <div class="prm"><label for="pBpm">Tempo del preset</label><output id="pBpmV">--</output>
+            <input type="range" id="pBpm" min="40" max="250" step="1"></div>
+          <div class="prm"><label for="pVol">Volume del preset</label><output id="pVolV">--</output>
+            <input type="range" id="pVol" min="0" max="99" step="1"></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Scaletta</h2>
+        <div class="setlist" id="setlist"></div>
+        <p class="hint" id="setlistHint">Aggiungi preset alla scaletta con la stella nella Libreria.</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== Libreria ===== -->
+  <div class="view" id="v-lib">
+    <section class="block">
+      <h2>Libreria</h2>
+      <div class="lib-bar">
+        <div class="seg" role="group" aria-label="Banco">
+          <button id="bankP" aria-pressed="true">Utente</button>
+          <button id="bankF" aria-pressed="false">Fabbrica</button>
+        </div>
+        <input id="libSearch" type="search" placeholder="Cerca per nome" aria-label="Cerca preset">
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="hint">I nomi sono quelli letti dal pedale. Quando salvi da qui, il nuovo nome si aggiorna anche nella libreria.</p>
+      <details class="diag">
+        <summary>Diagnostica MIDI</summary>
+        <div class="log" id="log"></div>
+      </details>
+    </section>
+  </div>
+
+  <!-- ===== Batteria ===== -->
+  <div class="view" id="v-drum">
+    <section class="block">
+      <h2>Batteria</h2>
+      <div class="drum">
+        <div>
+          <button class="big-play" id="drPlay" aria-pressed="false">▶ Avvia</button>
+          <div class="prm" style="margin-top:18px">
+            <label for="drPattern">Ritmo</label><span></span>
+            <select class="field" id="drPattern"></select>
+          </div>
+          <div class="prm" style="margin-top:18px">
+            <label for="drVol">Volume della batteria</label><output id="drVolV">50</output>
+            <input type="range" id="drVol" min="0" max="99" step="1" value="50">
+          </div>
+        </div>
+        <div class="tempo">
+          <div class="tempo-read"><b id="drBpmV">120</b><span class="muted">bpm</span></div>
+          <div class="tempo-btns">
+            <button class="btn" id="drMinus" aria-label="Rallenta di 1 bpm">−</button>
+            <button class="btn" id="drPlus" aria-label="Accelera di 1 bpm">+</button>
+            <button class="btn primary" id="drTap">Tap</button>
+          </div>
+          <input type="range" id="drBpm" min="40" max="250" step="1" value="120" aria-label="Tempo della batteria">
+          <p class="hint">Tocca Tap a tempo almeno quattro volte per impostare il tempo.</p>
+        </div>
+      </div>
+      <p class="hint">Il pedale non comunica quale ritmo sta suonando: all'apertura la pagina mostra l'ultimo scelto da qui.</p>
+    </section>
+  </div>
+
+  <!-- ===== Registra ===== -->
+  <div class="view" id="v-rec">
+    <section class="block">
+      <h2>Registra</h2>
+      <div class="rec-main">
+        <button class="rec-btn" id="rcBtn" aria-label="Avvia registrazione"><i></i></button>
+        <div>
+          <div class="rec-time" id="rcTime">0:00</div>
+          <div class="meter"><div id="rcMeter"></div></div>
+          <div class="input-row">
+            <select class="field" id="rcDev" aria-label="Ingresso audio"><option value="">Tocca Aggiorna per scegliere l'ingresso</option></select>
+            <button class="btn" id="rcRefresh">Aggiorna</button>
+          </div>
+          <p class="hint" id="rcSrc">Registra il suono che esce dal Matribox via USB, compresi looper e batteria.</p>
+        </div>
+      </div>
+      <div id="rcList"></div>
+      <p class="hint">Il looper si comanda dal pedale: tieni premuti insieme i due footswitch. Le registrazioni restano qui finché non chiudi la pagina, quindi scaricale.</p>
+    </section>
+  </div>
+
+  <!-- ===== Accorda ===== -->
+  <div class="view" id="v-tune">
+    <section class="block">
+      <h2>Accordatore</h2>
+      <div class="tuner" id="tuner">
+        <div class="tu-note" id="tuNote">--</div>
+        <div class="tu-scale"><div class="tu-mid"></div><div class="tu-needle" id="tuNeedle"></div></div>
+        <div class="tu-cents" id="tuCents"></div>
+        <div class="tu-ctrl">
+          <button class="btn primary" id="tuBtn">Avvia</button>
+          <label class="muted">La a <input id="tuRef" type="number" value="440" min="435" max="445"> Hz</label>
+        </div>
+      </div>
+      <p class="hint" id="tuSrc">Ascolta l'ingresso scelto in Registra. In prova: con preset puliti funziona meglio.</p>
+    </section>
+  </div>
+
+</main>
+
+<nav class="tabs" aria-label="Sezioni">
+  <button data-view="v-play" aria-current="page">
+    <svg viewBox="0 0 24 24"><rect x="3" y="7" width="5" height="10" rx="1"/><rect x="10" y="7" width="5" height="10" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/></svg>Suona</button>
+  <button data-view="v-lib">
+    <svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg>Libreria</button>
+  <button data-view="v-drum">
+    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="9" rx="8" ry="3"/><path d="M4 9v7c0 1.7 3.6 3 8 3s8-1.3 8-3V9"/></svg>Batteria</button>
+  <button data-view="v-rec">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Registra</button>
+  <button data-view="v-tune">
+    <svg viewBox="0 0 24 24"><path d="M5 18a9 9 0 0 1 14 0"/><path d="M12 18l4-7"/></svg>Accorda</button>
+</nav>
+
+<dialog id="saveDlg">
+  <form method="dialog">
+    <h2 id="saveTitle">Salva in P97</h2>
+    <label for="svName" class="muted">Nome del preset, fino a 11 caratteri</label>
+    <input id="svName" maxlength="11" autocomplete="off">
+    <p class="hint" id="saveNote">Il preset salvato in questo slot verrà sostituito.</p>
+    <div class="actions">
+      <button class="btn" value="cancel">Annulla</button>
+      <button class="btn primary" value="ok" id="saveConfirm">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const PRESET_NAMES = {"P":["MatriBox","60's OD","Natural CL","Morden Lead","RiffFrom80s","COMP Clean","Golden Age","Fat OD","Video Tape","Baby Cry","Cream OD","Funky Clean","Silver Hand","Cyber Grung","Dreamy","Calif Lead","Match OD","Jazz Tone","Max Hormone","Crudelia","Pure Chorus","Crazy Fuzz","Dirty Funk","Old TV","Katana-Zero","Weird West","Rotary Dub","Wahm-Fusion","Bleach","Lucid Dream","Crazy Jimmy","Voks Blues","Root Rock","Powerful","ThrashMetal","Calif Night","Plexi Lead","PlexiRhythm","Countryside","AC Sim 1","AC Sim 2","AC Sim 3","Brit Rock","JuiceyDrive","Clean Q","USA Idiot","GodSavePunk","J-Punk","GrungeSound","Post-Core","EVH","Metal Riff","Floating","Silence Air","Hang Over","Jazz Groove","Echo Lead","Unstable OD","KeepRinging","Djent","OCT FUZZ","Midnight","Red Mist","Stock","Sunny Day","Nutty Cake","Cosmic Wave","3 Melodies","Up In Cloud","Synth It Up","Deluxe.H","5E3 Tweed.H","Vox AC-15.H","JCM 800.H","EVH 5150.H","Deluxe.S","5E3 Tweed.S","Vox AC-15.S","JCM 800.S","EVH 5150.S","OD Bass","Bass Dist","Running Out","Sweet Bass","Echo Bass","Octave Bass","Dark Mirror","Bass OSC","Synth Bass","WARNING!","Basic AC","D Sim","OM Sim","Jumbo Sim","GA Sim","Lush AC","Selfless R","Selfless S","Dreamy AC"],"F":["MatriBox","60's OD","Natural CL","Morden Lead","RiffFrom80s","COMP Clean","Golden Age","Fat OD","Video Tape","Baby Cry","Cream OD","Funky Clean","Silver Hand","Cyber Grung","Dreamy","Calif Lead","Match OD","Jazz Tone","Max Hormone","80's Gig","Pure Chorus","Crazy Fuzz","Dirty Funk","Old TV","Katana-Zero","Weird West","Rotary Dub","Wahm-Fusion","Bleach","Lucid Dream","Crazy Jimmy","Voks Blues","Root Rock","Powerful","ThrashMetal","Calif Night","Plexi Lead","PlexiRhythm","Countryside","AC Sim 1","AC Sim 2","AC Sim 3","Brit Rock","JuiceyDrive","Clean Q","USA Idiot","GodSavePunk","J-Punk","GrungeSound","Post-Core","EVH","Metal Riff","Floating","Silence Air","Hang Over","Jazz Groove","Echo Lead","Unstable OD","KeepRinging","Djent","OCT FUZZ","Midnight","Red Mist","Not Drunk","Sunny Day","Nutty Cake","Cosmic Wave","3 Melodies","Up In Cloud","Synth It Up","Rich Bass","FingerStyle","Pick Style","Slap Bass","Tap Tap","Motown Bass","Bass Wah","Touch&Wah","US Bass","UK Bass","OD Bass","Bass Dist","Running Out","Sweet Bass","Echo Bass","Octave Bass","Dark Mirror","Bass OSC","Synth Bass","WARNING!","Basic AC","D Sim","OM Sim","Jumbo Sim","GA Sim","Lush AC","Deep AC","AC Vibe","Dreamy AC"]};
+const ALGORITHMS = {"FX1":[{"name":"COMP","code":0,"c":[{"n":"Sustain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"COMP2","code":1,"c":[{"n":"Sustain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Attack","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Clip","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"AC Sim","code":16777217,"c":[{"n":"Body","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Top","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mode","i":3,"p":3,"t":"c","o":[["STD",0],["Jumbo",1],["ENH",2],["Piezo",3]]}]},{"name":"Touch-W","code":16777231,"c":[{"n":"Sense","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Range","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mix","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mode","i":4,"p":4,"t":"c","o":[["Guitar",0],["Bass",1]]}]},{"name":"Auto-W","code":16777237,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Low","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"High","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":6,"p":6,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"UK-W","code":83886081,"c":[{"n":"Range","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Cry-W","code":83886088,"c":[{"n":"Range","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Octaver","code":16777249,"c":[{"n":"L-OCT","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"H-OCT","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Dry","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dual Melody","code":16777251,"c":[{"n":"H-Pitch","i":0,"p":0,"t":"k","lo":0.0,"hi":24.0,"st":1.0,"u":""},{"n":"L-Pitch","i":1,"p":1,"t":"k","lo":-24.0,"hi":0.0,"st":0.1,"u":""},{"n":"Dry","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"H-VOL","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"L-VOL","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Pitch","code":16777252,"c":[{"n":"H-Pitch","i":0,"p":0,"t":"k","lo":0.0,"hi":12.0,"st":1.0,"u":""},{"n":"L-Pitch","i":1,"p":1,"t":"k","lo":-12.0,"hi":0.0,"st":0.1,"u":""},{"n":"Wet","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Dry","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Range","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Tape Mod","code":16777267,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mix","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"H-Cut","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Ring Mod","code":16777263,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Freq","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Fine","i":2,"p":2,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"Tone","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Filter","code":16777241,"c":[{"n":"Step 1","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Step 2","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Step 3","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Step 4","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":4,"p":4,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Sync","i":5,"p":5,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Boost","code":26,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":1,"p":2,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Skreamer","code":50331648,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Butter OD","code":50331650,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Super OD","code":50331654,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Blues OD","code":50331657,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dist Plus","code":50331711,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mode","i":3,"p":3,"t":"c","o":[["Normal",0],["Scoop",1],["Edge",2]]},{"n":"Blend","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"JP Dist","code":50331690,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Shark","code":50331696,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dark Mouse","code":50331691,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Filter","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Fuzz Cream","code":50331682,"c":[{"n":"Sustain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Red Fuzz","code":50331684,"c":[{"n":"Fuzz","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bass Dist","code":50331712,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Blend","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]}],"FX2":[{"name":"Boost","code":26,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":1,"p":2,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Skreamer","code":50331648,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Butter OD","code":50331650,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Super OD","code":50331654,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Blues OD","code":50331657,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dist Plus","code":50331711,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mode","i":3,"p":3,"t":"c","o":[["Normal",0],["Scoop",1],["Edge",2]]},{"n":"Blend","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"JP Dist","code":50331690,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Shark","code":50331696,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dark Mouse","code":50331691,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Filter","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Fuzz Cream","code":50331682,"c":[{"n":"Sustain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Red Fuzz","code":50331684,"c":[{"n":"Fuzz","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bass Dist","code":50331712,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Blend","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"COMP","code":0,"c":[{"n":"Sustain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"COMP2","code":1,"c":[{"n":"Sustain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Attack","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Clip","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"AC Sim","code":16777217,"c":[{"n":"Body","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Top","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mode","i":3,"p":3,"t":"c","o":[["STD",0],["Jumbo",1],["ENH",2],["Piezo",3]]}]},{"name":"Touch-W","code":16777231,"c":[{"n":"Sense","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Range","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mix","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mode","i":4,"p":4,"t":"c","o":[["Guitar",0],["Bass",1]]}]},{"name":"Auto-W","code":16777237,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Low","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"High","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":6,"p":6,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"UK-W","code":83886081,"c":[{"n":"Range","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Cry-W","code":83886088,"c":[{"n":"Range","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Q","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Octaver","code":16777249,"c":[{"n":"L-OCT","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"H-OCT","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Dry","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dual Melody","code":16777251,"c":[{"n":"H-Pitch","i":0,"p":0,"t":"k","lo":0.0,"hi":24.0,"st":1.0,"u":""},{"n":"L-Pitch","i":1,"p":1,"t":"k","lo":-24.0,"hi":0.0,"st":0.1,"u":""},{"n":"Dry","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"H-VOL","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"L-VOL","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Pitch","code":16777252,"c":[{"n":"H-Pitch","i":0,"p":0,"t":"k","lo":0.0,"hi":12.0,"st":1.0,"u":""},{"n":"L-Pitch","i":1,"p":1,"t":"k","lo":-12.0,"hi":0.0,"st":0.1,"u":""},{"n":"Wet","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Dry","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Range","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Tape Mod","code":16777267,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Mix","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"H-Cut","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Ring Mod","code":16777263,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Freq","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Fine","i":2,"p":2,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"Tone","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Filter","code":16777241,"c":[{"n":"Step 1","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Step 2","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Step 3","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Step 4","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":4,"p":4,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Sync","i":5,"p":5,"t":"s","o":[["ON",1],["OFF",0]]}]}],"AMP":[{"name":"TWD Deluxe","code":117440513,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"B-Man N","code":117440515,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dark Double","code":117440516,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":5,"p":5,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Calif Star CL","code":117440537,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Voks 30N","code":117440529,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Cut","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":3,"p":3,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Bog SV CL","code":117440538,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":5,"p":5,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Jazz 120","code":117440532,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":4,"p":4,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Superb CL","code":117440533,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Doctor CL","code":117440539,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Cut","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Brit 45","code":117440554,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Brit 50JP","code":117440559,"c":[{"n":"VOL 1","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL 2","i":6,"p":6,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Brit 800","code":117440565,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Flyman B1","code":117440576,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Doctor OD","code":117440585,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Cut","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bog SV OD","code":117440573,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"B-Man B","code":117440548,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Voks 30TB","code":117440551,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Cut","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Char","i":5,"p":5,"t":"c","o":[["Cool",0],["Hot",1]]}]},{"name":"Supero 2","code":117440552,"c":[{"n":"VOL  1","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone 1","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL  2","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone 2","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Output","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Superb OD","code":117440584,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Sol 100 OD","code":117440583,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif Star OD","code":117440586,"c":[{"n":"Gain","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":6,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif IIC+","code":117440569,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dizzy VH","code":117440613,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Eng 120","code":117440607,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Halen 51","code":117440602,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":5,"p":6,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Sol 100 LD","code":117440601,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif IV","code":117440597,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif DualV","code":117440616,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif DualM","code":117440617,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dragon LD","code":117440611,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Flyman B1+","code":117440605,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Tanger R100","code":117440595,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bog XT Blue","code":117440621,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bog XT Red","code":117440622,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"PRES","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"A BassVT","code":117440627,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"MRange","i":3,"p":3,"t":"c","o":[["220Hz",0],["450Hz",1],["800Hz",2],["1.6kHz",3],["3kHz",4]]},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"A BassFT","code":134217845,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"F-2Bass","code":134217846,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bright","i":1,"p":1,"t":"s","o":[["ON",1],["OFF",0]]},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Voks Bass","code":117440629,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif Bass","code":117440631,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Master","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"AC Preamp","code":134217850,"c":[{"n":"VOL","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Balance","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"EQ Freq","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"EQ Q","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"EQ Gain","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Clone 1","code":251658240,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Clone 2","code":251658241,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Clone 3","code":251658242,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Clone 4","code":251658243,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Clone 5","code":251658244,"c":[{"n":"Gain","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"VOL","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Bass","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Middle","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Treble","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]}],"NR":[{"name":"Gate 1","code":27,"c":[{"n":"THRE","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Gate 2","code":29,"c":[{"n":"THRE","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"ATK","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rel","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]}],"CAB":[{"name":"Supero 1x6","code":167772160,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"TWD 1x8","code":167772161,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"TWD-P 1x10","code":167772162,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bog SV 1x12","code":167772166,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Viblux 1x12","code":167772164,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Voks 1x12","code":167772168,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif 1x12","code":167772172,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"TWD 2x12","code":167772187,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Double 2x12","code":167772178,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Star 2x12","code":167772185,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Rock 2x12","code":167772188,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Jazz 2x12","code":167772177,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"BritGN 2x12","code":167772179,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Free 2x12","code":167772186,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"B-Man 4x10","code":167772190,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Brit75 4x12","code":167772208,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"BritGN 4x12","code":167772194,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"BritLD 4x12","code":167772191,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"BritDK 4x12","code":167772203,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"BritMD 4x12","code":167772193,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bog 4x12","code":167772199,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dizzy 4x12","code":167772206,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Eng 4x12","code":167772198,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Halen 4x12","code":167772192,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Sol 4x12","code":167772200,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif 4x12","code":167772209,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Dual 4x12","code":167772196,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"WAM 4x12","code":167772204,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Tanger 4x12","code":167772201,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Watt 4x12","code":167772202,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Calif 2x10","code":167772213,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Work 4x10","code":167772217,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"A Bass 4x10","code":167772216,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"A Bass 8x10","code":167772219,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"D","code":167772220,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"OM","code":167772222,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Jumbo","code":167772223,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"GA","code":167772225,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"","code":168820750,"c":[{"n":"VOL","i":0,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]}],"EQ":[{"name":"Guitar EQ","code":16777269,"c":[{"n":"125Hz","i":0,"p":0,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"400Hz","i":1,"p":1,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"800Hz","i":2,"p":2,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"1.6kHz","i":3,"p":3,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"4kHz","i":4,"p":4,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"VOL","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Bass EQ","code":16777274,"c":[{"n":"50Hz","i":0,"p":0,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"120Hz","i":1,"p":1,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"400Hz","i":2,"p":2,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"800Hz","i":3,"p":3,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"2kHz","i":4,"p":4,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"VOL","i":5,"p":5,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]}],"MOD":[{"name":"Chorus A","code":67108864,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Tone","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Chorus B","code":67108872,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Level","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Detune","code":16777257,"c":[{"n":"Detune","i":0,"p":0,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"Wet","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Dry","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]},{"name":"Flanger","code":67108881,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"PreDly","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"FdBk","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Phaser","code":67108889,"c":[{"n":"Rate","i":0,"p":0,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Sync","i":1,"p":1,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Vibrato","code":67108885,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Sync","i":2,"p":2,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Vibe","code":67108895,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Sync","i":2,"p":2,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Tremolo","code":67108897,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"Sync","i":2,"p":2,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Sine Trem","code":67108902,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Bias Trem","code":67108904,"c":[{"n":"Depth","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Rate","i":1,"p":1,"t":"k","lo":0.1,"hi":10.0,"st":0.1,"u":"Hz"},{"n":"VOL","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Bias","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""}]}],"DLY":[{"name":"Warm","code":184549389,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Pure","code":184549376,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Mag","code":184549378,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Tube","code":184549387,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",2],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"999 Echo","code":184549394,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Reverse","code":184549395,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"FdBk","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":2,"p":2,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Slap","code":184549381,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":300.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":3,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Rack","code":184549396,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"FdBk","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":2,"p":2,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"Mod","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":5,"p":5,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":6,"p":6,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Sweep","code":184549382,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"FdBk","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":2,"p":2,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"Swp Depth","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Swp Rate","i":4,"p":4,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Swp Sync","i":5,"p":5,"t":"s","o":[["On",1],["Off",0]]},{"n":"Time Sync","i":6,"p":6,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":7,"p":7,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Ping Pong","code":184549380,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"FdBk","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":2,"p":2,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"Sync","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":4,"p":4,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Tape","code":184549388,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Time","i":1,"p":1,"t":"k","lo":20.0,"hi":4000.0,"st":1.0,"u":""},{"n":"FdBk","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Tone","i":3,"p":3,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Sync","i":4,"p":5,"t":"s","o":[["On",1],["Off",0]]},{"n":"Trail","i":5,"p":6,"t":"s","o":[["On",1],["Off",0]]}]}],"RVB":[{"name":"Room","code":201326592,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Pre Delay","i":1,"p":1,"t":"k","lo":0.0,"hi":100.0,"st":1.0,"u":"ms"},{"n":"Decay","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":3,"p":3,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Hall","code":201326593,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Pre Delay","i":1,"p":1,"t":"k","lo":0.0,"hi":100.0,"st":1.0,"u":"ms"},{"n":"Decay","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":3,"p":3,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Church","code":201326594,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Pre Delay","i":1,"p":1,"t":"k","lo":0.0,"hi":100.0,"st":1.0,"u":"ms"},{"n":"Decay","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":3,"p":3,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Plate","code":201326595,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Decay","i":1,"p":1,"t":"k","lo":0.0,"hi":100.0,"st":1.0,"u":""},{"n":"H-Damp","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Spring","code":201326596,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Decay","i":1,"p":1,"t":"k","lo":0.0,"hi":100.0,"st":1.0,"u":""},{"n":"Tone","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":3,"p":3,"t":"s","o":[["On",1],["Off",0]]}]},{"name":"Sky","code":201326598,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Decay","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":2,"p":2,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Sea","code":201326599,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Decay","i":1,"p":1,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Trail","i":2,"p":2,"t":"s","o":[["ON",1],["OFF",0]]}]},{"name":"Mod RVB","code":201326600,"c":[{"n":"Mix","i":0,"p":0,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Pre Delay","i":1,"p":1,"t":"k","lo":0.0,"hi":100.0,"st":1.0,"u":"ms"},{"n":"Decay","i":2,"p":2,"t":"k","lo":0.0,"hi":99.0,"st":1.0,"u":""},{"n":"Lo End","i":3,"p":3,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"Hi End","i":4,"p":4,"t":"k","lo":-50.0,"hi":50.0,"st":1.0,"u":""},{"n":"Trail","i":5,"p":5,"t":"s","o":[["On",1],["Off",0]]}]}]};
+const DRUM_PATTERNS = ["D&B","Electro1","Electro2","Techno","TripHop","E-Pop","Break","H-Hop1","H-Hop2","H-Hop3","H-Hop4","Prog","Rock 1","Rock 2","Rock 3","Surfin","Shuffle","R'n'R","Ballad","SF3/4","Rock5/4","Classic","SF4/4","Garag","Hard 1","Hard 2","Nu 1","Nu 2","Metal1","Metal2","Punk 1","Punk 2","Punk 3","Punk 4","Punk 5","P Punk 1","P Punk 2","EMO","Core","NWave","P Rock1","P Rock2","P Rock3","Hard 3","Funk 1","Funk 2","Funk 3","Funk 4","Pub","Pop 1","Pop 2","Pop 3","Blues 1","Blues 2","Blues 3","B-grass","Country","Folk","Blues 4","Latin 1","Latin 2","Latin 3","Pop 1","Pop 2","Bossa1","Bossa2","Beguine","Mazuke","Samba","Army","March 1","March 2","Musette","NuAge1","NuAge2","Polka","Tango","Ska","Waltz","RAG1","RAG2","World","Jazz 1","Jazz 2","Jazz 3","Jazz 4","Funk1","Funk2","Funk3","Fusion","1/4","2/4","3/4","4/4","5/4","6/4","7/4","6/8","7/8","9/8"];
+// =====================================================================
+// Matribox Remote – logica dell'app.
+// Protocollo ricavato dalle catture USB: vedi protocollo_midi_note.md
+// =====================================================================
+
+// ---------- Protocollo ----------
+const HEADER = [0xF0, 0x21, 0x25, 0x7F, 0x51, 0x4D, 0x45, 0x32];   // F0 21 25 7F "QME2"
+const MODULES = ["FX1", "FX2", "AMP", "NR", "CAB", "EQ", "MOD", "DLY", "RVB"];   // ID protocollo = indice + 1
+const BANKS = { P: 0, F: 1 };
+
+const nibbles = bytes => bytes.flatMap(b => [b >> 4, b & 0x0F]);
+const unNibble = arr => { const o = []; for (let i = 0; i + 1 < arr.length; i += 2) o.push((arr[i] << 4) | arr[i + 1]); return o; };
+const hex = arr => Array.from(arr, b => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
+const f32 = new DataView(new ArrayBuffer(4));
+const floatBytes = v => { f32.setFloat32(0, v, true); return [0, 1, 2, 3].map(i => f32.getUint8(i)); };
+const u32Bytes = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+
+const msg = {
+  preset: (bank, slot) => [...HEADER, 0x12, 0x00, 0x02, ...nibbles([0, BANKS[bank], 0, slot - 1, 0]), 0xF7],
+  onOff: (modId, on) => [0xB1, 47 + modId, on ? 0x00 : 0x7F],
+  model: (modId, code) => [...HEADER, 0x12, 0x10, modId, ...nibbles([1, ...u32Bytes(code)]), 0xF7],
+  param: (modId, code, p, v) => [...HEADER, 0x12, 0x10, modId, ...nibbles([2, ...u32Bytes(code), p & 255, p >> 8, ...floatBytes(v)]), 0xF7],
+  setting: (type, v) => [...HEADER, 0x12, 0x11, 0x00, ...nibbles([type, v & 255, v >> 8]), 0xF7],     // 2 = BPM, 3 = volume
+  drum: (type, v) => [...HEADER, 0x12, 0x00, 0x01, ...nibbles([type, v & 255, v >> 8]), 0xF7],        // 21 ritmo, 23 BPM, 24 vol, 25 play
+  fs: (slot, v) => [...HEADER, 0x12, 0x00, 0x00, ...nibbles([slot, v & 255, v >> 8]), 0xF7],
+  name: (idx, name) => {
+    const t = Array.from(name.slice(0, 11), ch => { const c = ch.charCodeAt(0); return c >= 32 && c < 127 ? c : 63; });
+    while (t.length < 12) t.push(0);
+    return [...HEADER, 0x12, 0x11, 0x00, ...nibbles([0, 0, 0, idx, 0]), ...t, 0xF7];
+  },
+  save: idx => [...HEADER, 0x12, 0x12, 0x00, ...nibbles([2, 0, 0, idx, 0]), 0xF7],
+  // ordine della catena: posizione (u16) di FX1 … RVB
+  chain: pos => [...HEADER, 0x12, 0x11, 0x00, ...nibbles([1, ...pos.flatMap(p => [p & 255, p >> 8])]), 0xF7],
+  read: () => [...HEADER, 0x11, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0xF7],
+};
+
+// ---------- Stato ----------
+let midiOut = null, midiIn = null;
+let current = null;            // { bank, slot }
+let preset = null;             // preset in modifica letto dal pedale
+let selected = "AMP";          // blocco aperto nel pannello
+let dirty = false;
+let reading = null, readTimer = null;
+let libBank = "P";
+
+const $ = id => document.getElementById(id);
+const label = (bank, slot) => bank + String(slot).padStart(2, "0");
+const presetName = (bank, slot) => PRESET_NAMES[bank][slot - 1] || "";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let setlist = store.get("matribox.setlist", ["P97", "P98"]);
+
+function log(text) {
+  const el = $("log");
+  el.textContent = `${new Date().toLocaleTimeString()}  ${text}\n` + el.textContent.slice(0, 6000);
+}
+let toastTimer = null;
+function toast(text) {
+  const t = $("toast"); t.textContent = text; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+// ---------- Collegamento MIDI ----------
+async function connect() {
+  if (!navigator.requestMIDIAccess) { setLink(false, "Questo browser non supporta il MIDI: usa Chrome"); return; }
+  try {
+    const access = await navigator.requestMIDIAccess({ sysex: true });
+    access.onstatechange = () => attach(access);
+    attach(access);
+  } catch (e) {
+    setLink(false, "Accesso MIDI non consentito");
+    log("Errore: " + e);
+  }
+}
+
+function attach(access) {
+  const isMb = p => /matribox/i.test(p.name || "");
+  const out = [...access.outputs.values()].find(isMb) || null;
+  const inp = [...access.inputs.values()].find(isMb) || null;
+  if (midiIn && midiIn !== inp) midiIn.onmidimessage = null;
+  midiOut = out; midiIn = inp;
+  if (midiIn) midiIn.onmidimessage = onMessage;
+  const ok = !!midiOut;
+  setLink(ok, ok ? "Collegato" : "Matribox non trovato: controlla il cavo USB");
+  $("emptyPlay").hidden = ok; $("playArea").hidden = !ok;
+  $("connectBtn").hidden = ok;
+  if (ok) scheduleRead(200);
+  log(ok ? "Porte: " + midiOut.name + " / " + (midiIn && midiIn.name) : "Nessuna porta Matribox");
+}
+
+function setLink(ok, text) { $("link").classList.toggle("ok", ok); $("linkText").textContent = text; }
+
+function send(bytes) {
+  if (!midiOut) { toast("Collega prima il Matribox"); return false; }
+  midiOut.send(bytes);
+  log("→ " + hex(bytes));
+  return true;
+}
+
+function onMessage(ev) {
+  const d = Array.from(ev.data);
+  if (!HEADER.every((b, i) => d[i] === b)) { log("← " + hex(d)); return; }
+  if (readHandle(d)) return;
+  if (settingsHandle(d)) return;
+  if (d[8] === 0x12 && d[9] === 0x00 && d[10] === 0x02) {          // cambio preset dal pedale
+    const b = unNibble(d.slice(11, -1));
+    if (b.length >= 4 && b[0] === 0 && b[2] === 0 && b[1] <= 1) {
+      const bank = b[1] ? "F" : "P";
+      setCurrent(bank, b[3] + 1);
+      log("← preset " + label(bank, b[3] + 1) + " dal pedale");
+      return;
+    }
+  }
+  if (d.length < 40) log("← " + hex(d));
+}
+
+// ---------- Lettura del preset in modifica ----------
+function scheduleRead(delay = 250) { clearTimeout(readTimer); readTimer = setTimeout(readPreset, delay); }
+
+function readPreset() {
+  if (!midiOut || !midiIn) return;
+  reading = { chunks: {}, timer: setTimeout(() => { reading = null; $("readState").textContent = "Lettura non riuscita"; }, 3000) };
+  $("readState").textContent = "Lettura del preset";
+  midiOut.send(msg.read());
+}
+
+function readHandle(d) {
+  if (!(d[8] === 0x12 && d[9] === 0x13 && d[10] === 0x02)) return false;
+  if (!reading) return true;
+  const step = d[12], bank = d[13], idx = d[14];          // d[11] = 00
+  if (step === 0x01) {
+    midiOut.send([...HEADER, 0x12, 0x13, 0x02, 0x00, 0x02, bank, idx, 0x01, 0xF7]);
+  } else if (step === 0x03) {
+    const chunk = d[16];
+    reading.chunks[chunk] = d.slice(17, -1);
+    midiOut.send([...HEADER, 0x12, 0x13, 0x02, 0x00, 0x04, bank, idx, 0x00, chunk, 0x01, 0xF7]);
+  } else if (step === 0x05) {
+    clearTimeout(reading.timer);
+    const nib = Object.keys(reading.chunks).map(Number).sort((a, b) => a - b).flatMap(k => reading.chunks[k]);
+    reading = null;
+    parsePreset(unNibble(nib));
+  }
+  return true;
+}
+
+function parsePreset(b) {
+  if (b.length < 640) { log("Preset incompleto: " + b.length + " byte"); return; }
+  const dv = new DataView(new Uint8Array(b).buffer);
+  let name = "";
+  for (let i = 2; i < 14 && b[i]; i++) name += String.fromCharCode(b[i]);
+  const mods = MODULES.map((m, k) => {
+    const values = [];
+    for (let j = 0; j < 15; j++) values.push(dv.getFloat32(68 + 60 * k + 4 * j, true));
+    return { name: m, id: k + 1, code: dv.getUint32(32 + 4 * k, true), values,
+             on: dv.getUint16(608 + 2 * k, true) === 1, pos: dv.getUint16(14 + 2 * k, true) };
+  });
+  const fs = []; for (let j = 0; j < 6; j++) fs.push(dv.getUint16(630 + 2 * j, true));
+  preset = { name, mods, fs, bpm: dv.getUint16(626, true), vol: dv.getUint16(628, true) };
+  dirty = false;
+  $("readState").textContent = "Letto dal pedale";
+  renderPlay();
+}
+
+function settingsHandle(d) {
+  if (!(d[8] === 0x12 && d[9] === 0x11 && d[10] === 0x00)) return false;
+  const b = unNibble(d.slice(11, -1));
+  if (b[0] === 0x02) { const bpm = b[1] | (b[2] << 8); setRange("pBpm", bpm); setDrumBpm(bpm, false); }
+  else if (b[0] === 0x03) setRange("pVol", b[1]);
+  return true;
+}
+
+// ---------- Azioni sul preset ----------
+function selectPreset(bank, slot) {
+  if (slot < 1 || slot > 99) return;
+  if (dirty && !confirm("Le modifiche a questo preset non sono salvate. Cambiare preset comunque?")) return;
+  if (send(msg.preset(bank, slot))) setCurrent(bank, slot);
+}
+
+function setCurrent(bank, slot) {
+  current = { bank, slot };
+  dirty = false;
+  renderHeader(); renderSetlist(); renderLibrary();
+  scheduleRead(300);
+}
+
+function markDirty() { dirty = true; $("dirty").classList.add("on"); $("saveOpen").classList.toggle("primary", !$("saveOpen").disabled); }
+
+function toggleBlock(mod) {
+  if (!send(msg.onOff(mod.id, !mod.on))) return;
+  mod.on = !mod.on; markDirty(); renderChain();
+  if (mod.name === selected) renderDetail();
+}
+
+// ---------- Ordine della catena ----------
+function moveBlock(mod, dir) {
+  const order = [...preset.mods].sort((a, b) => a.pos - b.pos);
+  const i = order.indexOf(mod), j = i + dir;
+  if (j < 0 || j >= order.length) return;
+  [order[i], order[j]] = [order[j], order[i]];
+  order.forEach((m, k) => { m.pos = k; });
+  if (!send(msg.chain(preset.mods.map(m => m.pos)))) return;
+  markDirty(); renderChain(); renderDetail();
+}
+
+// ---------- Footswitch ----------
+const footswitchOf = i => { const p = preset.fs.indexOf(i); return p < 0 ? 0 : p < 3 ? 1 : 2; };
+function setFootswitch(i, sw) {
+  const lists = [preset.fs.slice(0, 3), preset.fs.slice(3, 6)].map(l => l.filter(v => v !== 0xFFFF && v !== i));
+  if (sw) {
+    if (lists[sw - 1].length >= 3) { toast("FS " + sw + " controlla già 3 blocchi"); return false; }
+    lists[sw - 1].push(i);
+  }
+  const next = lists.flatMap(l => [...l, 0xFFFF, 0xFFFF, 0xFFFF].slice(0, 3));
+  next.forEach((v, s) => { if (v !== preset.fs[s]) send(msg.fs(s, v)); });
+  preset.fs = next; markDirty();
+  return true;
+}
+
+// ---------- Interfaccia: Suona ----------
+const throttles = {};
+function throttled(key, fn, ms = 60) {
+  const t = throttles[key] || (throttles[key] = { last: 0, timer: null });
+  clearTimeout(t.timer);
+  if (Date.now() - t.last >= ms) { t.last = Date.now(); fn(); }
+  else t.timer = setTimeout(() => { t.last = Date.now(); fn(); }, ms);
+}
+function paintRange(r) { r.style.setProperty("--p", ((r.value - r.min) / (r.max - r.min) * 100) + "%"); }
+function setRange(id, v) { const r = $(id); r.value = v; paintRange(r); const o = $(id + "V"); if (o) o.textContent = v; }
+const fmt = (v, c) => (c.st < 1 ? v.toFixed(1) : Math.round(v)) + (c.u ? " " + c.u : "");
+const algOf = mod => (ALGORITHMS[mod.name] || []).find(a => a.code === mod.code);
+
+function renderPlay() { renderHeader(); renderChain(); renderDetail(); renderSetlist();
+  if (preset) { setRange("pBpm", preset.bpm); setRange("pVol", preset.vol); } }
+
+function renderHeader() {
+  $("curSlot").textContent = current ? label(current.bank, current.slot) : "Preset attivo";
+  $("curName").textContent = preset ? preset.name : (current ? presetName(current.bank, current.slot) : "--");
+  $("dirty").classList.toggle("on", dirty);
+  const canSave = current && current.bank === "P";
+  $("saveOpen").classList.toggle("primary", !!(dirty && canSave));
+  $("saveOpen").disabled = !canSave;
+  $("saveOpen").title = canSave ? "" : "I preset di fabbrica non si possono sovrascrivere";
+  $("prevBtn").disabled = !current || current.slot <= 1;
+  $("nextBtn").disabled = !current || current.slot >= 99;
+}
+
+function renderChain() {
+  const wrap = $("chain"); wrap.innerHTML = "";
+  if (!preset) return;
+  const order = [...preset.mods].sort((a, b) => a.pos - b.pos);
+  for (const mod of order) {
+    const alg = algOf(mod), fsw = footswitchOf(mod.id - 1);
+    const el = document.createElement("div");
+    el.className = "pedal" + (mod.on ? "" : " off") + (mod.name === selected ? " sel" : "");
+    el.style.setProperty("--c", `var(--c-${mod.name})`);
+    el.innerHTML = `<button class="led" aria-label=""><i></i></button>
+      <button class="body" aria-label=""><span class="mod"></span><span class="model"></span></button>`;
+    const [led, body] = el.querySelectorAll("button");
+    led.setAttribute("aria-label", (mod.on ? "Spegni " : "Accendi ") + mod.name);
+    led.setAttribute("aria-pressed", String(mod.on));
+    body.setAttribute("aria-label", "Modifica " + mod.name);
+    el.querySelector(".mod").textContent = mod.name;
+    el.querySelector(".model").textContent = alg ? alg.name : "Sconosciuto";
+    if (fsw) { const f = document.createElement("span"); f.className = "fs"; f.textContent = "FS" + fsw; el.appendChild(f); }
+    led.onclick = () => toggleBlock(mod);
+    body.onclick = () => { selected = mod.name; renderChain(); renderDetail(); };
+    wrap.appendChild(el);
+  }
+}
+
+function renderDetail() {
+  const box = $("detail"); box.innerHTML = "";
+  if (!preset) return;
+  const mod = preset.mods.find(m => m.name === selected);
+  const list = ALGORITHMS[mod.name] || [], alg = algOf(mod);
+  box.style.setProperty("--c", `var(--c-${mod.name})`);
+
+  const head = document.createElement("div"); head.className = "detail-head";
+  const title = document.createElement("div"); title.className = "mod"; title.textContent = mod.name;
+  const sel = document.createElement("select"); sel.className = "field"; sel.setAttribute("aria-label", "Modello di " + mod.name);
+  if (!alg) sel.append(new Option("Modello sconosciuto", "", true, true));
+  for (const a of list) sel.append(new Option(a.name, a.code, false, a.code === mod.code));
+  sel.onchange = () => { if (send(msg.model(mod.id, parseInt(sel.value, 10)))) { markDirty(); scheduleRead(400); } };
+  const pw = document.createElement("button"); pw.className = "power" + (mod.on ? " on" : "");
+  pw.innerHTML = "<i></i><span></span>"; pw.querySelector("span").textContent = mod.on ? "Acceso" : "Spento";
+  pw.setAttribute("aria-pressed", String(mod.on));
+  pw.onclick = () => toggleBlock(mod);
+  head.append(title, sel, pw);
+
+  const order = [...preset.mods].sort((a, b) => a.pos - b.pos), at = order.indexOf(mod);
+  const moveRow = document.createElement("div"); moveRow.className = "row-fs";
+  moveRow.innerHTML = '<span class="muted">Posizione nella catena</span><div class="seg" role="group" aria-label="Sposta il blocco"></div><span class="muted pos"></span>';
+  moveRow.querySelector(".pos").textContent = (at + 1) + " di " + order.length;
+  [["‹ Prima", -1], ["Dopo ›", 1]].forEach(([t, d]) => {
+    const b = document.createElement("button"); b.textContent = t;
+    b.disabled = (d < 0 && at === 0) || (d > 0 && at === order.length - 1);
+    b.setAttribute("aria-label", d < 0 ? "Sposta " + mod.name + " di un posto verso l'inizio" : "Sposta " + mod.name + " di un posto verso la fine");
+    b.onclick = () => moveBlock(mod, d);
+    moveRow.querySelector(".seg").appendChild(b);
+  });
+
+  const fsRow = document.createElement("div"); fsRow.className = "row-fs";
+  fsRow.innerHTML = '<span class="muted">Footswitch in Stomp Mode</span><div class="seg" role="group" aria-label="Footswitch"></div>';
+  const seg = fsRow.querySelector(".seg"), cur = footswitchOf(mod.id - 1);
+  [["Nessuno", 0], ["FS 1", 1], ["FS 2", 2]].forEach(([t, v]) => {
+    const b = document.createElement("button"); b.textContent = t; b.setAttribute("aria-pressed", String(v === cur));
+    b.onclick = () => { if (setFootswitch(mod.id - 1, v)) { renderDetail(); renderChain(); } };
+    seg.appendChild(b);
+  });
+
+  const params = document.createElement("div"); params.className = "params";
+  for (const c of (alg ? alg.c : [])) {
+    const row = document.createElement("div"); row.className = "prm";
+    const id = "p_" + mod.name + "_" + c.i;
+    const lab = document.createElement("label"); lab.textContent = c.n; lab.htmlFor = id;
+    const v0 = mod.values[c.i];
+    if (c.t === "k") {
+      const out = document.createElement("output"); out.textContent = fmt(v0, c);
+      const r = document.createElement("input"); r.type = "range"; r.id = id;
+      r.min = c.lo; r.max = c.hi; r.step = c.st; r.value = v0; paintRange(r);
+      r.oninput = () => {
+        const v = parseFloat(r.value); mod.values[c.i] = v; out.textContent = fmt(v, c); paintRange(r); markDirty();
+        throttled(id, () => send(msg.param(mod.id, mod.code, c.p, v)));
+      };
+      row.append(lab, out, r);
+    } else {
+      const s = document.createElement("select"); s.className = "field"; s.id = id;
+      for (const [n, v] of c.o) s.append(new Option(n, v, false, Math.round(v0) === v));
+      s.onchange = () => { const v = parseInt(s.value, 10); mod.values[c.i] = v; markDirty(); send(msg.param(mod.id, mod.code, c.p, v)); };
+      row.append(lab, document.createElement("span"), s);
+    }
+    params.appendChild(row);
+  }
+  box.append(head, moveRow, fsRow, params);
+}
+
+function renderSetlist() {
+  const wrap = $("setlist"); wrap.innerHTML = "";
+  $("setlistHint").hidden = setlist.length > 0;
+  for (const key of setlist) {
+    const bank = key[0], slot = parseInt(key.slice(1), 10);
+    const b = document.createElement("button");
+    b.className = "chip" + (current && label(current.bank, current.slot) === key ? " active" : "");
+    b.innerHTML = "<b></b><span></span>";
+    b.querySelector("b").textContent = key; b.querySelector("span").textContent = presetName(bank, slot);
+    b.onclick = () => selectPreset(bank, slot);
+    wrap.appendChild(b);
+  }
+}
+
+// ---------- Salvataggio ----------
+function openSave() {
+  if (!current || current.bank !== "P") return;
+  const slot = label(current.bank, current.slot);
+  $("saveTitle").textContent = "Salva in " + slot;
+  $("saveNote").textContent = `Il preset salvato in ${slot} verrà sostituito con le impostazioni attuali.`;
+  $("svName").value = preset ? preset.name : presetName("P", current.slot);
+  $("saveDlg").showModal();
+  $("svName").select();
+}
+
+function doSave() {
+  const name = $("svName").value.trim() || (preset && preset.name) || "Preset";
+  const idx = current.slot - 1, slot = label("P", current.slot);
+  if (!send(msg.name(idx, name))) return;
+  setTimeout(() => {
+    send(msg.save(idx));
+    PRESET_NAMES.P[idx] = name.slice(0, 11);
+    if (preset) preset.name = name.slice(0, 11);
+    dirty = false;
+    renderHeader(); renderSetlist(); renderLibrary();
+    toast(`Salvato in ${slot}`);
+    scheduleRead(500);
+  }, 80);
+}
+
+// ---------- Libreria ----------
+function renderLibrary() {
+  const wrap = $("grid"); wrap.innerHTML = "";
+  $("bankP").setAttribute("aria-pressed", String(libBank === "P"));
+  $("bankF").setAttribute("aria-pressed", String(libBank === "F"));
+  const q = $("libSearch").value.trim().toLowerCase();
+  for (let s = 1; s <= 99; s++) {
+    const key = label(libBank, s), name = presetName(libBank, s);
+    if (q && !name.toLowerCase().includes(q) && !key.toLowerCase().includes(q)) continue;
+    const el = document.createElement("div");
+    el.className = "item" + (current && label(current.bank, current.slot) === key ? " active" : "");
+    el.innerHTML = '<button class="go"><b></b><span></span></button><button class="star">★</button>';
+    el.querySelector("b").textContent = key; el.querySelector("span").textContent = name;
+    const star = el.querySelector(".star"), inList = setlist.includes(key);
+    star.setAttribute("aria-pressed", String(inList));
+    star.setAttribute("aria-label", (inList ? "Togli dalla scaletta " : "Aggiungi alla scaletta ") + key);
+    el.querySelector(".go").onclick = () => selectPreset(libBank, s);
+    star.onclick = () => {
+      setlist = inList ? setlist.filter(k => k !== key) : [...setlist, key];
+      store.set("matribox.setlist", setlist); renderLibrary(); renderSetlist();
+      toast(inList ? key + " tolto dalla scaletta" : key + " aggiunto alla scaletta");
+    };
+    wrap.appendChild(el);
+  }
+  if (!wrap.children.length) wrap.innerHTML = '<p class="hint">Nessun preset con questo nome.</p>';
+}
+
+// ---------- Batteria ----------
+let drumPlaying = false, taps = [];
+function setDrumBpm(bpm, sendIt = true) {
+  bpm = Math.max(40, Math.min(250, Math.round(bpm)));
+  $("drBpmV").textContent = bpm; $("drBpm").value = bpm; paintRange($("drBpm"));
+  if (sendIt) throttled("drbpm", () => send(msg.drum(0x23, bpm)), 80);
+}
+function initDrum() {
+  DRUM_PATTERNS.forEach((n, i) => $("drPattern").append(new Option(n, i)));
+  const last = store.get("matribox.drumPattern", 0); $("drPattern").value = last;
+  $("drPattern").onchange = () => { const v = parseInt($("drPattern").value, 10); store.set("matribox.drumPattern", v); send(msg.drum(0x21, v)); };
+  $("drPlay").onclick = () => {
+    if (!send(msg.drum(0x25, drumPlaying ? 0 : 1))) return;
+    drumPlaying = !drumPlaying;
+    $("drPlay").classList.toggle("on", drumPlaying); $("drPlay").setAttribute("aria-pressed", String(drumPlaying));
+    $("drPlay").textContent = drumPlaying ? "■ Ferma" : "▶ Avvia";
+  };
+  $("drBpm").oninput = () => setDrumBpm(parseInt($("drBpm").value, 10));
+  $("drMinus").onclick = () => setDrumBpm(parseInt($("drBpm").value, 10) - 1);
+  $("drPlus").onclick = () => setDrumBpm(parseInt($("drBpm").value, 10) + 1);
+  $("drTap").onclick = () => {
+    const now = performance.now();
+    taps = taps.filter(t => now - t < 2500); taps.push(now);
+    if (taps.length >= 4) {
+      const gaps = taps.slice(1).map((t, i) => t - taps[i]);
+      setDrumBpm(60000 / (gaps.reduce((a, b) => a + b, 0) / gaps.length));
+    }
+  };
+  $("drVol").oninput = () => { setRange("drVol", $("drVol").value); throttled("drvol", () => send(msg.drum(0x24, parseInt($("drVol").value, 10))), 80); };
+  paintRange($("drBpm")); paintRange($("drVol"));
+}
+
+// ---------- Audio: ingresso del Matribox ----------
+async function listInputs() {
+  const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "audioinput");
+  tmp.getTracks().forEach(t => t.stop());
+  const sel = $("rcDev"), prev = sel.value; sel.innerHTML = "";
+  for (const d of devs) {
+    if (d.deviceId === "default" || d.deviceId === "communications") continue;
+    sel.append(new Option(d.label || "Ingresso senza nome", d.deviceId));
+  }
+  const mb = [...sel.options].find(o => /matribox/i.test(o.textContent));
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev; else if (mb) sel.value = mb.value;
+  $("rcSrc").textContent = mb ? "Ingresso del Matribox pronto." :
+    "Ingresso del Matribox non trovato: sceglilo dal menu, di solito si chiama Microfono (MatriBox Audio).";
+}
+async function matriboxStream() {
+  if (!$("rcDev").value) await listInputs();
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: $("rcDev").value },
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 } });
+  const tr = stream.getAudioTracks()[0];
+  return { stream, label: tr ? tr.label : "" };
+}
+
+// ---------- Registra ----------
+let rec = null; const takes = [];
+async function startRec() {
+  try {
+    const { stream, label: lb } = await matriboxStream();
+    const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find(m => MediaRecorder.isTypeSupported(m)) || "";
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 256000 } : undefined);
+    const parts = []; mr.ondataavailable = e => e.data.size && parts.push(e.data);
+    mr.onstop = () => finishRec(parts, mr.mimeType);
+    const ctx = new AudioContext(), an = ctx.createAnalyser(); an.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(an);
+    rec = { mr, stream, ctx, an, t0: Date.now(), raf: 0, buf: new Float32Array(an.fftSize) };
+    mr.start(1000);
+    $("rcSrc").textContent = "Registrazione da " + lb;
+    $("rcBtn").classList.add("on"); $("rcBtn").setAttribute("aria-label", "Ferma registrazione");
+    meter();
+  } catch (e) { $("rcSrc").textContent = "Audio non disponibile: " + e.message; }
+}
+function meter() {
+  if (!rec) return;
+  rec.an.getFloatTimeDomainData(rec.buf);
+  let pk = 0; for (const v of rec.buf) pk = Math.max(pk, Math.abs(v));
+  $("rcMeter").style.width = Math.min(100, pk * 100) + "%"; $("rcMeter").classList.toggle("clip", pk > 0.98);
+  const s = Math.floor((Date.now() - rec.t0) / 1000);
+  $("rcTime").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  rec.raf = requestAnimationFrame(meter);
+}
+function stopRec() {
+  if (!rec) return;
+  cancelAnimationFrame(rec.raf); rec.mr.stop(); rec.stream.getTracks().forEach(t => t.stop()); rec.ctx.close(); rec = null;
+  $("rcBtn").classList.remove("on"); $("rcBtn").setAttribute("aria-label", "Avvia registrazione"); $("rcMeter").style.width = "0";
+}
+async function finishRec(parts, mime) {
+  const blob = new Blob(parts, { type: mime || "audio/webm" }), d = new Date(), p = n => String(n).padStart(2, "0");
+  const name = `Matribox_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  let wav = null; try { wav = await toWav(blob); } catch (e) { log("Conversione WAV non riuscita: " + e); }
+  takes.unshift({ name, wav, url: URL.createObjectURL(wav || blob) }); renderTakes();
+  toast("Registrazione pronta da scaricare");
+}
+async function toWav(blob) {
+  const ctx = new AudioContext(), a = await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close();
+  const ch = Math.min(2, a.numberOfChannels), n = a.length, rate = a.sampleRate;
+  const buf = new ArrayBuffer(44 + n * ch * 2), v = new DataView(buf);
+  const s = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  s(0, "RIFF"); v.setUint32(4, 36 + n * ch * 2, true); s(8, "WAVE"); s(12, "fmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, ch, true); v.setUint32(24, rate, true); v.setUint32(28, rate * ch * 2, true);
+  v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true); s(36, "data"); v.setUint32(40, n * ch * 2, true);
+  const data = [...Array(ch)].map((_, c) => a.getChannelData(c)); let o = 44;
+  for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const x = Math.max(-1, Math.min(1, data[c][i])); v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7FFF, true); o += 2; }
+  return new Blob([buf], { type: "audio/wav" });
+}
+function renderTakes() {
+  const w = $("rcList"); w.innerHTML = "";
+  for (const t of takes) {
+    const r = document.createElement("div"); r.className = "take";
+    r.innerHTML = '<b></b><audio controls></audio><a class="btn primary small"></a><button class="btn small">Elimina</button>';
+    r.querySelector("b").textContent = t.name; r.querySelector("audio").src = t.url;
+    const a = r.querySelector("a"); a.href = t.url; a.download = t.name + (t.wav ? ".wav" : ".webm"); a.textContent = "Scarica " + (t.wav ? "WAV" : "WEBM");
+    r.querySelector("button").onclick = () => {
+      if (!confirm("Eliminare " + t.name + "? Se non l'hai scaricata andrà persa.")) return;
+      URL.revokeObjectURL(t.url); takes.splice(takes.indexOf(t), 1); renderTakes();
+    };
+    w.appendChild(r);
+  }
+}
+
+// ---------- Accorda (in prova) ----------
+const NOTE_NAMES = ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
+let tuner = null;
+async function startTuner() {
+  try {
+    const { stream, label: lb } = await matriboxStream();
+    const ctx = new AudioContext(), an = ctx.createAnalyser(); an.fftSize = 4096;
+    ctx.createMediaStreamSource(stream).connect(an);
+    tuner = { ctx, stream, an, buf: new Float32Array(an.fftSize), raf: 0, hist: [] };
+    $("tuSrc").textContent = "Ascolto da " + lb; $("tuBtn").textContent = "Ferma"; tuneLoop();
+  } catch (e) { $("tuSrc").textContent = "Audio non disponibile: " + e.message; }
+}
+function stopTuner() {
+  if (!tuner) return;
+  cancelAnimationFrame(tuner.raf); tuner.stream.getTracks().forEach(t => t.stop()); tuner.ctx.close(); tuner = null;
+  $("tuBtn").textContent = "Avvia"; $("tuNote").textContent = "--"; $("tuCents").textContent = "";
+  $("tuNeedle").style.left = "50%"; $("tuner").classList.remove("intune");
+}
+function detectPitch(buf, rate) {
+  let rms = 0; for (const v of buf) rms += v * v; rms = Math.sqrt(rms / buf.length);
+  if (rms < 0.01) return null;
+  const lo = Math.floor(rate / 1000), hi = Math.floor(rate / 60), n = buf.length - hi - 2, corr = new Float32Array(hi + 2);
+  for (let lag = lo; lag <= hi + 1; lag++) {
+    let s = 0, e1 = 0, e2 = 0;
+    for (let i = 0; i < n; i++) { const a = buf[i], b = buf[i + lag]; s += a * b; e1 += a * a; e2 += b * b; }
+    corr[lag] = s / Math.sqrt(e1 * e2 + 1e-12);
+  }
+  let best = -1, L = -1;
+  for (let lag = lo + 1; lag <= hi; lag++) if (corr[lag] > 0.9 && corr[lag] >= corr[lag - 1] && corr[lag] >= corr[lag + 1]) { L = lag; best = corr[lag]; break; }
+  if (L < 0) { for (let lag = lo; lag <= hi; lag++) if (corr[lag] > best) { best = corr[lag]; L = lag; } if (best < 0.8) return null; }
+  const y0 = corr[L - 1], y1 = corr[L], y2 = corr[L + 1], den = y0 - 2 * y1 + y2;
+  return rate / (L + (den ? (y0 - y2) / (2 * den) : 0));
+}
+function tuneLoop() {
+  if (!tuner) return;
+  tuner.an.getFloatTimeDomainData(tuner.buf);
+  const f = detectPitch(tuner.buf, tuner.ctx.sampleRate);
+  if (f) {
+    tuner.hist.push(f); if (tuner.hist.length > 5) tuner.hist.shift();
+    const fm = [...tuner.hist].sort((a, b) => a - b)[Math.floor(tuner.hist.length / 2)];
+    const midi = 69 + 12 * Math.log2(fm / (parseFloat($("tuRef").value) || 440)), nr = Math.round(midi), ct = Math.round((midi - nr) * 100);
+    $("tuNote").textContent = NOTE_NAMES[((nr % 12) + 12) % 12] + (Math.floor(nr / 12) - 1);
+    $("tuCents").textContent = (ct > 0 ? "+" : "") + ct + " cent, " + fm.toFixed(1) + " Hz";
+    $("tuNeedle").style.left = (50 + Math.max(-50, Math.min(50, ct))) + "%";
+    $("tuner").classList.toggle("intune", Math.abs(ct) <= 4);
+  }
+  tuner.raf = requestAnimationFrame(tuneLoop);
+}
+
+// ---------- Navigazione ----------
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
+  document.querySelectorAll(".tabs button").forEach(b => b.toggleAttribute("aria-current", b.dataset.view === id));
+  document.querySelectorAll(".tabs button[aria-current]").forEach(b => b.setAttribute("aria-current", "page"));
+  store.set("matribox.view", id);
+  window.scrollTo({ top: 0 });
+}
+
+// ---------- Avvio ----------
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
+$("connectBtn").onclick = connect; $("connectBig").onclick = connect;
+$("prevBtn").onclick = () => current && selectPreset(current.bank, current.slot - 1);
+$("nextBtn").onclick = () => current && selectPreset(current.bank, current.slot + 1);
+$("saveOpen").onclick = openSave;
+$("saveDlg").addEventListener("close", () => { if ($("saveDlg").returnValue === "ok") doSave(); });
+$("pBpm").oninput = () => { setRange("pBpm", $("pBpm").value); markDirty(); throttled("pbpm", () => send(msg.setting(2, parseInt($("pBpm").value, 10))), 120); };
+$("pVol").oninput = () => { setRange("pVol", $("pVol").value); markDirty(); throttled("pvol", () => send(msg.setting(3, parseInt($("pVol").value, 10))), 120); };
+$("bankP").onclick = () => { libBank = "P"; renderLibrary(); };
+$("bankF").onclick = () => { libBank = "F"; renderLibrary(); };
+$("libSearch").oninput = renderLibrary;
+$("rcBtn").onclick = () => (rec ? stopRec() : startRec());
+$("rcRefresh").onclick = () => listInputs().catch(e => { $("rcSrc").textContent = "Audio non disponibile: " + e.message; });
+$("tuBtn").onclick = () => (tuner ? stopTuner() : startTuner());
+window.addEventListener("beforeunload", e => { if (dirty || takes.length) { e.preventDefault(); e.returnValue = ""; } });
+
+initDrum(); renderLibrary(); renderSetlist(); renderTakes();
+showView(store.get("matribox.view", "v-play"));
+// App installabile e offline (solo su https o localhost)
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").catch(e => log("Service worker non registrato: " + e));
+}
+// Se Chrome ha già concesso il MIDI a questa pagina, collego subito.
+if (navigator.permissions && navigator.requestMIDIAccess) {
+  navigator.permissions.query({ name: "midi", sysex: true }).then(p => { if (p.state === "granted") connect(); }).catch(() => {});
+}
+
+</script>
+</body>
+</html>
