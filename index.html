@@ -37,6 +37,7 @@
   --bar: 72px;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; background: var(--tolex); color: var(--cream); font: 16px/1.45 var(--text); }
 body { -webkit-tap-highlight-color: transparent; padding-bottom: calc(var(--bar) + env(safe-area-inset-bottom)); }
 button, select, input { font: inherit; color: inherit; }
@@ -76,8 +77,26 @@ h2 { font: 600 22px/1.1 var(--display); margin: 0 0 12px; letter-spacing: .01em;
 .nav { height: 96px; border-radius: var(--r-lg); background: var(--panel); font-size: 30px; color: var(--dust); }
 .nav:active:not(:disabled) { color: var(--cream); background: var(--panel-2); }
 .who { min-width: 0; }
-.slot { font: 700 22px/1 var(--display); color: var(--brass); letter-spacing: .04em; }
-.name { font: 700 clamp(44px, 7vw, 76px)/.95 var(--display); margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 10px 0 0;
+  font: 700 22px/1 var(--display); color: var(--brass); letter-spacing: .04em; }
+.slot svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.name { display: flex; align-items: center; gap: 14px; max-width: 100%; text-align: left;
+  font: 700 clamp(44px, 7vw, 76px)/.95 var(--display); margin: 2px 0 0; }
+.name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.name svg { flex: 0 0 auto; width: 26px; height: 26px; stroke: var(--dust); fill: none; stroke-width: 2; stroke-linejoin: round; opacity: .7; }
+.name-edit { width: 100%; background: var(--panel); border: 0; border-bottom: 3px solid var(--brass); border-radius: var(--r-sm) var(--r-sm) 0 0;
+  color: var(--cream); padding: 2px 10px; outline: none; }
+/* menu dei preset */
+#pickDlg { width: min(720px, 94vw); max-height: 86vh; display: none; flex-direction: column; padding: 18px; }
+#pickDlg[open] { display: flex; }
+.pick-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.pick-bar input { flex: 1 1 180px; height: var(--tap); margin: 0; font-size: 17px; }
+.pick-list { overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 2px; }
+.pick-list button { min-height: 58px; text-align: left; padding: 8px 12px; border-radius: var(--r-md); background: var(--panel-2); }
+.pick-list button b { display: block; font: 600 13px/1 var(--display); color: var(--dust); letter-spacing: .04em; }
+.pick-list button span { display: block; font: 600 18px/1.2 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick-list button.active { box-shadow: inset 0 0 0 2px var(--brass); }
+.pick-list button.active b { color: var(--brass); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 10px; color: var(--dust); }
 .dirty { display: none; color: var(--brass); font-weight: 600; }
 .dirty.on { display: inline; }
@@ -268,8 +287,9 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
       <section class="stage" aria-label="Preset attivo">
         <button class="nav" id="prevBtn" aria-label="Preset precedente">‹</button>
         <div class="who">
-          <div class="slot" id="curSlot">--</div>
-          <div class="name" id="curName">Preset</div>
+          <button class="slot" id="curSlot" aria-haspopup="dialog" aria-label="Scegli un altro preset"><span id="curSlotTxt">--</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <button class="name" id="curName" aria-label="Rinomina il preset"><span id="curNameTxt">Preset</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
+          <input class="name name-edit" id="nameEdit" maxlength="11" autocomplete="off" aria-label="Nuovo nome del preset" hidden>
           <div class="meta">
             <span id="readState">Lettura del preset</span>
             <span class="dirty" id="dirty">Modificato, non salvato</span>
@@ -435,6 +455,18 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
       <button class="btn primary" value="ok">Carica</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="pickDlg" aria-label="Scegli un preset">
+  <div class="pick-bar">
+    <div class="seg" role="group" aria-label="Banco">
+      <button id="pickP" aria-pressed="true">Utente</button>
+      <button id="pickF" aria-pressed="false">Fabbrica</button>
+    </div>
+    <input id="pickSearch" type="search" placeholder="Cerca per nome" aria-label="Cerca preset">
+    <button class="btn" id="pickClose">Chiudi</button>
+  </div>
+  <div class="pick-list" id="pickList"></div>
 </dialog>
 
 <div class="toast" id="toast" role="status"></div>
@@ -684,8 +716,8 @@ function renderPlay() { renderHeader(); renderChain(); renderDetail(); renderSet
   if (preset) { setRange("pBpm", preset.bpm); setRange("pVol", preset.vol); } }
 
 function renderHeader() {
-  $("curSlot").textContent = current ? label(current.bank, current.slot) : "Preset attivo";
-  $("curName").textContent = preset ? preset.name : (current ? presetName(current.bank, current.slot) : "--");
+  $("curSlotTxt").textContent = current ? label(current.bank, current.slot) : "Preset attivo";
+  $("curNameTxt").textContent = preset ? preset.name : (current ? presetName(current.bank, current.slot) : "--");
   $("dirty").classList.toggle("on", dirty);
   const canSave = current && current.bank === "P";
   $("saveOpen").classList.toggle("primary", !!(dirty && canSave));
@@ -938,6 +970,63 @@ function initImport() {
   $("expOpen").onclick = exportPrst;
 }
 
+// ---------- Rinomina toccando il nome ----------
+function startRename() {
+  if (!preset) return;
+  if (current && current.bank === "F") { toast("I preset di fabbrica non si possono rinominare"); return; }
+  const inp = $("nameEdit");
+  inp.value = preset.name; $("curName").hidden = true; inp.hidden = false; inp.focus(); inp.select();
+}
+function endRename(keep) {
+  const inp = $("nameEdit");
+  if (inp.hidden) return;
+  const name = inp.value.replace(/[^\x20-\x7E]/g, "").trim().slice(0, 11);
+  inp.hidden = true; $("curName").hidden = false;
+  if (keep && name && name !== preset.name) {
+    preset.name = name; markDirty(); renderHeader();
+    toast("Nome cambiato: premi Salva per scriverlo sul pedale");
+  }
+}
+
+// ---------- Menu dei preset toccando il numero ----------
+let pickBank = "P";
+function openPicker() {
+  pickBank = current ? current.bank : "P";
+  $("pickSearch").value = "";
+  renderPicker();
+  $("pickDlg").showModal();
+  const act = $("pickList").querySelector(".active");
+  if (act) act.scrollIntoView({ block: "center" });
+}
+function renderPicker() {
+  $("pickP").setAttribute("aria-pressed", String(pickBank === "P"));
+  $("pickF").setAttribute("aria-pressed", String(pickBank === "F"));
+  const wrap = $("pickList"), q = $("pickSearch").value.trim().toLowerCase();
+  wrap.innerHTML = "";
+  for (let s = 1; s <= 99; s++) {
+    const key = label(pickBank, s), name = presetName(pickBank, s);
+    if (q && !name.toLowerCase().includes(q) && !key.toLowerCase().includes(q)) continue;
+    const b = document.createElement("button");
+    if (current && label(current.bank, current.slot) === key) b.className = "active";
+    b.innerHTML = "<b></b><span></span>";
+    b.querySelector("b").textContent = key; b.querySelector("span").textContent = name;
+    b.onclick = () => { $("pickDlg").close(); selectPreset(pickBank, s); };
+    wrap.appendChild(b);
+  }
+  if (!wrap.children.length) wrap.innerHTML = '<p class="hint">Nessun preset con questo nome.</p>';
+}
+function initHeaderControls() {
+  $("curName").onclick = startRename;
+  $("nameEdit").onkeydown = e => { if (e.key === "Enter") endRename(true); else if (e.key === "Escape") endRename(false); };
+  $("nameEdit").onblur = () => endRename(true);
+  $("curSlot").onclick = openPicker;
+  $("pickP").onclick = () => { pickBank = "P"; renderPicker(); };
+  $("pickF").onclick = () => { pickBank = "F"; renderPicker(); };
+  $("pickSearch").oninput = renderPicker;
+  $("pickClose").onclick = () => $("pickDlg").close();
+  $("pickDlg").onclick = e => { if (e.target === $("pickDlg")) $("pickDlg").close(); };   // tocco fuori dal menu
+}
+
 // ---------- Libreria ----------
 function renderLibrary() {
   const wrap = $("grid"); wrap.innerHTML = "";
@@ -1151,6 +1240,7 @@ $("prevBtn").onclick = () => current && selectPreset(current.bank, current.slot 
 $("nextBtn").onclick = () => current && selectPreset(current.bank, current.slot + 1);
 $("saveOpen").onclick = openSave;
 initImport();
+initHeaderControls();
 $("saveDlg").addEventListener("close", () => { if ($("saveDlg").returnValue === "ok") doSave(); });
 $("pBpm").oninput = () => { setRange("pBpm", $("pBpm").value); markDirty(); throttled("pbpm", () => send(msg.setting(2, parseInt($("pBpm").value, 10))), 120); };
 $("pVol").oninput = () => { setRange("pVol", $("pVol").value); markDirty(); throttled("pvol", () => send(msg.setting(3, parseInt($("pVol").value, 10))), 120); };
