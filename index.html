@@ -743,20 +743,20 @@ function renderDetail() {
     const row = document.createElement("div"); row.className = "prm";
     const id = "p_" + mod.name + "_" + c.i;
     const lab = document.createElement("label"); lab.textContent = c.n; lab.htmlFor = id;
-    const v0 = mod.values[c.i];
+    const v0 = mod.values[c.p];
     if (c.t === "k") {
       const out = document.createElement("output"); out.textContent = fmt(v0, c);
       const r = document.createElement("input"); r.type = "range"; r.id = id;
       r.min = c.lo; r.max = c.hi; r.step = c.st; r.value = v0; paintRange(r);
       r.oninput = () => {
-        const v = parseFloat(r.value); mod.values[c.i] = v; out.textContent = fmt(v, c); paintRange(r); markDirty();
+        const v = parseFloat(r.value); mod.values[c.p] = v; out.textContent = fmt(v, c); paintRange(r); markDirty();
         throttled(id, () => send(msg.param(mod.id, mod.code, c.p, v)));
       };
       row.append(lab, out, r);
     } else {
       const s = document.createElement("select"); s.className = "field"; s.id = id;
       for (const [n, v] of c.o) s.append(new Option(n, v, false, Math.round(v0) === v));
-      s.onchange = () => { const v = parseInt(s.value, 10); mod.values[c.i] = v; markDirty(); send(msg.param(mod.id, mod.code, c.p, v)); };
+      s.onchange = () => { const v = parseInt(s.value, 10); mod.values[c.p] = v; markDirty(); send(msg.param(mod.id, mod.code, c.p, v)); };
       row.append(lab, document.createElement("span"), s);
     }
     params.appendChild(row);
