@@ -81,7 +81,7 @@ h2 { font: 600 22px/1.1 var(--display); margin: 0 0 12px; letter-spacing: .01em;
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 10px; color: var(--dust); }
 .dirty { display: none; color: var(--brass); font-weight: 600; }
 .dirty.on { display: inline; }
-.meta .btn { margin-left: auto; }
+.file-btns { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- Catena del segnale (elemento principale) ---------- */
 .chain { position: relative; display: grid; grid-template-columns: repeat(9, minmax(84px, 1fr)); gap: 14px;
@@ -273,7 +273,12 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
           <div class="meta">
             <span id="readState">Lettura del preset</span>
             <span class="dirty" id="dirty">Modificato, non salvato</span>
-            <button class="btn small" id="saveOpen">Salva</button>
+            <span class="file-btns">
+              <button class="btn small" id="impOpen">Importa</button>
+              <button class="btn small" id="expOpen">Esporta</button>
+              <button class="btn small" id="saveOpen">Salva</button>
+            </span>
+            <input type="file" id="impFile" accept=".prst,application/xml,text/xml" hidden>
           </div>
         </div>
         <button class="nav" id="nextBtn" aria-label="Preset successivo">›</button>
@@ -415,6 +420,19 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
     <div class="actions">
       <button class="btn" value="cancel">Annulla</button>
       <button class="btn primary" value="ok" id="saveConfirm">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="impDlg">
+  <form method="dialog">
+    <h2>Importa un preset</h2>
+    <p class="hint" id="impCount"></p>
+    <select class="field" id="impPick" aria-label="Preset da importare"></select>
+    <p class="hint">Il preset viene caricato nel preset attivo senza salvarlo: se ti piace, premi Salva.</p>
+    <div class="actions">
+      <button class="btn" value="cancel">Annulla</button>
+      <button class="btn primary" value="ok">Carica</button>
     </div>
   </form>
 </dialog>
@@ -588,6 +606,9 @@ function parsePreset(b) {
   preset = { name, mods, fs, bpm: dv.getUint16(626, true), vol: dv.getUint16(628, true) };
   dirty = false;
   $("readState").textContent = "Letto dal pedale";
+  if (afterImport) {                    // dopo un import il preset resta "modificato" con il nome del file
+    preset.name = afterImport.name; dirty = true; afterImport = null;
+  }
   renderPlay();
 }
 
@@ -804,6 +825,119 @@ function doSave() {
   }, 80);
 }
 
+// ---------- Esporta / importa .prst (formato dell'editor ufficiale) ----------
+const WRITE_ORDER = ["RVB", "DLY", "MOD", "EQ", "CAB", "NR", "AMP", "FX2", "FX1"];
+let afterImport = null;
+const xmlEsc = t => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const num = v => Number.isInteger(v) ? String(v) : String(Math.round(v * 1000) / 1000);
+
+function buildPrst(p, slot) {
+  const effects = WRITE_ORDER.map(name => {
+    const m = p.mods.find(x => x.name === name), alg = algOf(m);
+    const prm = m.values.map((v, j) => `params_${j}="${num(v)}"`);
+    return `    <Effect effectModuleName="${name}" effectName="${xmlEsc(alg ? alg.name : "")}" effectState="${m.on ? 1 : 0}" effectCode="${m.code}"\n` +
+           `            ${prm[0]} x="${m.pos}" y="0" ${prm.slice(1).join(" ")}/>`;
+  }).join("\n");
+  const f = p.fs;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+
+<Matribox>
+  <preset_info software="1.0.2" firmware="1.0" product="Maxtribox" count="1"
+               platform="WIN" time="${Date.now()}"/>
+  <presets ppBank="0" ppName="${xmlEsc(p.name)}" ppVolume="${p.vol}" ppID="${slot}" ppBPM="${p.bpm}"
+           ppIRNum="0" ppType="4" ppAuthor="" ppNotes="" ppTypeName="Rock">
+${effects}
+    <ppCtrl c11="${f[0]}" c12="${f[1]}" c13="${f[2]}" c21="${f[3]}" c22="${f[4]}" c23="${f[5]}"/>
+    <ppEXP1 expTarget="0" expVolume="0" expVolumeMin="0" expVolumeMax="99">
+      <ppEXP1_0 expMId="65535" expCode="524295" expIndex="0" expMin="0" expMax="99"/>
+      <ppEXP1_1 expMId="65535" expCode="524295" expIndex="0" expMin="0" expMax="99"/>
+      <ppEXP1_2 expMId="65535" expCode="524295" expIndex="0" expMin="0" expMax="99"/>
+    </ppEXP1>
+  </presets>
+</Matribox>
+`.replace(/\n/g, "\r\n");
+}
+
+function exportPrst() {
+  if (!preset) { toast("Aspetta che il preset sia letto dal pedale"); return; }
+  const xml = buildPrst(preset, current ? current.slot : 1);
+  const fileName = (current ? label(current.bank, current.slot) + " " : "") + preset.name.replace(/[\\/:*?"<>|]/g, "_") + ".prst";
+  const url = URL.createObjectURL(new Blob([xml], { type: "application/octet-stream" }));
+  const a = document.createElement("a"); a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast("Esportato " + fileName);
+}
+
+// Legge un file .prst: può contenere uno o più preset (Export All Patches dell'editor).
+function parsePrst(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("il file non è un preset .prst valido");
+  return [...doc.getElementsByTagName("presets")].map(p => {
+    const mods = {};
+    for (const e of p.getElementsByTagName("Effect")) {
+      const name = e.getAttribute("effectModuleName");
+      if (!MODULES.includes(name)) continue;
+      const params = []; for (let j = 0; j < 15; j++) params.push(parseFloat(e.getAttribute("params_" + j) || "0"));
+      mods[name] = { code: parseInt(e.getAttribute("effectCode"), 10), on: e.getAttribute("effectState") === "1",
+                     pos: parseInt(e.getAttribute("x") || "0", 10), params };
+    }
+    const c = p.getElementsByTagName("ppCtrl")[0];
+    const fs = c ? ["c11", "c12", "c13", "c21", "c22", "c23"].map(k => parseInt(c.getAttribute(k) || "65535", 10)) : null;
+    return { name: ((p.getAttribute("ppName") || "").trim() || "Importato").slice(0, 11), bpm: parseInt(p.getAttribute("ppBPM") || "120", 10),
+             vol: parseInt(p.getAttribute("ppVolume") || "50", 10), mods, fs };
+  }).filter(p => Object.keys(p.mods).length === MODULES.length);
+}
+
+// Messaggi che portano il preset attivo allo stato del file.
+function prstMessages(p) {
+  const out = [];
+  MODULES.forEach((name, k) => out.push(msg.model(k + 1, p.mods[name].code)));          // il modello azzera i parametri
+  MODULES.forEach((name, k) => {
+    const m = p.mods[name], alg = (ALGORITHMS[name] || []).find(a => a.code === m.code);
+    if (alg) for (const c of alg.c) out.push(msg.param(k + 1, m.code, c.p, m.params[c.p] || 0));
+  });
+  MODULES.forEach((name, k) => out.push(msg.onOff(k + 1, p.mods[name].on)));
+  out.push(msg.chain(MODULES.map(n => p.mods[n].pos)));
+  if (p.fs) p.fs.forEach((v, s) => out.push(msg.fs(s, v)));
+  out.push(msg.setting(2, p.bpm), msg.setting(3, p.vol));
+  return out;
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function applyPrst(p) {
+  if (!midiOut) { toast("Collega prima il Matribox"); return; }
+  $("readState").textContent = "Caricamento di " + p.name;
+  const out = prstMessages(p);
+  for (const m of out) { midiOut.send(m); await wait(12); }
+  log("Import: inviati " + out.length + " messaggi per " + p.name);
+  afterImport = { name: p.name };
+  scheduleRead(400);
+  toast(p.name + " caricato: premi Salva per tenerlo");
+}
+
+function initImport() {
+  $("impFile").onchange = async () => {
+    const file = $("impFile").files[0]; $("impFile").value = "";
+    if (!file) return;
+    let list;
+    try { list = parsePrst(await file.text()); } catch (e) { toast("Import non riuscito: " + e.message); return; }
+    if (!list.length) { toast("Nel file non c'è un preset del Matribox"); return; }
+    if (list.length === 1) { applyPrst(list[0]); return; }
+    const sel = $("impPick"); sel.innerHTML = "";
+    list.forEach((p, i) => sel.append(new Option((i + 1) + ". " + p.name, i)));
+    $("impCount").textContent = `Il file contiene ${list.length} preset. Scegli quello da caricare nel preset attivo.`;
+    $("impDlg").returnValue = "";
+    $("impDlg").onclose = () => { if ($("impDlg").returnValue === "ok") applyPrst(list[parseInt(sel.value, 10)]); };
+    $("impDlg").showModal();
+  };
+  $("impOpen").onclick = () => {
+    if (!midiOut) { toast("Collega prima il Matribox"); return; }
+    if (dirty && !confirm("Le modifiche a questo preset non sono salvate. Caricare comunque un file?")) return;
+    $("impFile").click();
+  };
+  $("expOpen").onclick = exportPrst;
+}
+
 // ---------- Libreria ----------
 function renderLibrary() {
   const wrap = $("grid"); wrap.innerHTML = "";
@@ -1016,6 +1150,7 @@ $("connectBtn").onclick = connect; $("connectBig").onclick = connect;
 $("prevBtn").onclick = () => current && selectPreset(current.bank, current.slot - 1);
 $("nextBtn").onclick = () => current && selectPreset(current.bank, current.slot + 1);
 $("saveOpen").onclick = openSave;
+initImport();
 $("saveDlg").addEventListener("close", () => { if ($("saveDlg").returnValue === "ok") doSave(); });
 $("pBpm").oninput = () => { setRange("pBpm", $("pBpm").value); markDirty(); throttled("pbpm", () => send(msg.setting(2, parseInt($("pBpm").value, 10))), 120); };
 $("pVol").oninput = () => { setRange("pVol", $("pVol").value); markDirty(); throttled("pvol", () => send(msg.setting(3, parseInt($("pVol").value, 10))), 120); };
