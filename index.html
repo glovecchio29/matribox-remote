@@ -120,6 +120,18 @@ h2 { font: 600 22px/1.1 var(--display); margin: 0 0 12px; letter-spacing: .01em;
 .pedal .mod { font: 700 24px/1 var(--display); color: var(--c); }
 .pedal.off .mod { color: var(--dust); }
 .pedal .model { font-size: 13px; color: var(--dust); margin-top: 4px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pedal .body { cursor: grab; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.pedal.lift { transform: scale(1.03); transition: transform .12s; }
+.pedal.dragging { z-index: 3; opacity: .92; box-shadow: 0 14px 30px #000a, 0 0 0 2px var(--c); transition: none; cursor: grabbing; }
+.chain.sorting .pedal:not(.dragging) { transition: box-shadow .1s; }
+.pedal.drop-before { box-shadow: -9px 0 0 -5px var(--brass); }
+.pedal.drop-after { box-shadow: 9px 0 0 -5px var(--brass); }
+.history { display: inline-flex; gap: 6px; }
+.btn.icon { width: 44px; padding: 0; display: inline-grid; place-items: center; }
+.btn.icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.keys { border-collapse: collapse; margin: 6px 0; }
+.keys td { padding: 6px 14px 6px 0; border-bottom: 1px solid var(--rule); }
+.keys td:first-child { color: var(--cream); font-weight: 600; white-space: nowrap; }
 .pedal .fs { position: absolute; top: 8px; right: 8px; font: 600 12px/1 var(--display); color: var(--dust);
   border: 1px solid var(--rule); border-radius: 4px; padding: 3px 5px; }
 
@@ -291,6 +303,12 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
           <button class="name" id="curName" aria-label="Rinomina il preset"><span id="curNameTxt">Preset</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
           <input class="name name-edit" id="nameEdit" maxlength="11" autocomplete="off" aria-label="Nuovo nome del preset" hidden>
           <div class="meta">
+            <span class="history">
+              <button class="btn small icon" id="undoBtn" aria-label="Annulla l'ultima modifica" title="Annulla (Ctrl+Z)" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+              <button class="btn small icon" id="redoBtn" aria-label="Ripeti la modifica annullata" title="Ripeti (Ctrl+Y)" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+            </span>
             <span id="readState">Lettura del preset</span>
             <span class="dirty" id="dirty">Modificato, non salvato</span>
             <span class="file-btns">
@@ -340,6 +358,21 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
       </div>
       <div class="grid" id="grid"></div>
       <p class="hint">I nomi sono quelli letti dal pedale. Quando salvi da qui, il nuovo nome si aggiorna anche nella libreria.</p>
+      <details class="diag">
+        <summary>Scorciatoie da tastiera</summary>
+        <table class="keys">
+          <tr><td>Ctrl + Z</td><td>Annulla l'ultima modifica</td></tr>
+          <tr><td>Ctrl + Y, Ctrl + Maiusc + Z</td><td>Ripeti</td></tr>
+          <tr><td>Ctrl + S</td><td>Salva il preset</td></tr>
+          <tr><td>Ctrl + O, Ctrl + E</td><td>Importa, esporta</td></tr>
+          <tr><td>← →, Pag ↑ Pag ↓</td><td>Preset precedente, successivo</td></tr>
+          <tr><td>P</td><td>Menu dei preset</td></tr>
+          <tr><td>F2</td><td>Rinomina il preset</td></tr>
+          <tr><td>1 … 9</td><td>Apri il blocco in quella posizione</td></tr>
+          <tr><td>Spazio</td><td>Accendi o spegni il blocco aperto</td></tr>
+        </table>
+        <p class="hint">Sul tablet usa i pulsanti di annullamento accanto al nome. Per spostare un blocco trascinalo; col dito tienilo premuto un attimo prima di trascinare.</p>
+      </details>
       <details class="diag">
         <summary>Diagnostica MIDI</summary>
         <div class="log" id="log"></div>
@@ -641,6 +674,8 @@ function parsePreset(b) {
   if (afterImport) {                    // dopo un import il preset resta "modificato" con il nome del file
     preset.name = afterImport.name; dirty = true; afterImport = null;
   }
+  if (keepHistory) { keepHistory = false; lastState = snap(preset); dirty = dirty || undoStack.length > 0; renderHistoryButtons(); }
+  else resetHistory();
   renderPlay();
 }
 
@@ -670,7 +705,7 @@ function markDirty() { dirty = true; $("dirty").classList.add("on"); $("saveOpen
 
 function toggleBlock(mod) {
   if (!send(msg.onOff(mod.id, !mod.on))) return;
-  mod.on = !mod.on; markDirty(); renderChain();
+  mod.on = !mod.on; markDirty(); remember(""); renderChain();
   if (mod.name === selected) renderDetail();
 }
 
@@ -682,7 +717,7 @@ function moveBlock(mod, dir) {
   [order[i], order[j]] = [order[j], order[i]];
   order.forEach((m, k) => { m.pos = k; });
   if (!send(msg.chain(preset.mods.map(m => m.pos)))) return;
-  markDirty(); renderChain(); renderDetail();
+  markDirty(); remember(""); renderChain(); renderDetail();
 }
 
 // ---------- Footswitch ----------
@@ -695,7 +730,7 @@ function setFootswitch(i, sw) {
   }
   const next = lists.flatMap(l => [...l, 0xFFFF, 0xFFFF, 0xFFFF].slice(0, 3));
   next.forEach((v, s) => { if (v !== preset.fs[s]) send(msg.fs(s, v)); });
-  preset.fs = next; markDirty();
+  preset.fs = next; markDirty(); remember("");
   return true;
 }
 
@@ -746,7 +781,12 @@ function renderChain() {
     el.querySelector(".model").textContent = alg ? alg.name : "Sconosciuto";
     if (fsw) { const f = document.createElement("span"); f.className = "fs"; f.textContent = "FS" + fsw; el.appendChild(f); }
     led.onclick = () => toggleBlock(mod);
-    body.onclick = () => { selected = mod.name; renderChain(); renderDetail(); };
+    body.onpointerdown = e => startDragWatch(e, mod, el);
+    body.onclick = () => {
+      if (el.dataset.justDragged) { delete el.dataset.justDragged; return; }
+      selected = mod.name; renderChain(); renderDetail();
+    };
+    body.oncontextmenu = e => e.preventDefault();             // pressione lunga: niente menu del browser
     wrap.appendChild(el);
   }
 }
@@ -763,7 +803,7 @@ function renderDetail() {
   const sel = document.createElement("select"); sel.className = "field"; sel.setAttribute("aria-label", "Modello di " + mod.name);
   if (!alg) sel.append(new Option("Modello sconosciuto", "", true, true));
   for (const a of list) sel.append(new Option(a.name, a.code, false, a.code === mod.code));
-  sel.onchange = () => { if (send(msg.model(mod.id, parseInt(sel.value, 10)))) { markDirty(); scheduleRead(400); } };
+  sel.onchange = () => { if (send(msg.model(mod.id, parseInt(sel.value, 10)))) { markDirty(); mod.code = parseInt(sel.value, 10); remember(""); keepHistory = true; scheduleRead(400); } };
   const pw = document.createElement("button"); pw.className = "power" + (mod.on ? " on" : "");
   pw.innerHTML = "<i></i><span></span>"; pw.querySelector("span").textContent = mod.on ? "Acceso" : "Spento";
   pw.setAttribute("aria-pressed", String(mod.on));
@@ -802,14 +842,14 @@ function renderDetail() {
       const r = document.createElement("input"); r.type = "range"; r.id = id;
       r.min = c.lo; r.max = c.hi; r.step = c.st; r.value = v0; paintRange(r);
       r.oninput = () => {
-        const v = parseFloat(r.value); mod.values[c.p] = v; out.textContent = fmt(v, c); paintRange(r); markDirty();
+        const v = parseFloat(r.value); mod.values[c.p] = v; out.textContent = fmt(v, c); paintRange(r); markDirty(); remember(id);
         throttled(id, () => send(msg.param(mod.id, mod.code, c.p, v)));
       };
       row.append(lab, out, r);
     } else {
       const s = document.createElement("select"); s.className = "field"; s.id = id;
       for (const [n, v] of c.o) s.append(new Option(n, v, false, Math.round(v0) === v));
-      s.onchange = () => { const v = parseInt(s.value, 10); mod.values[c.p] = v; markDirty(); send(msg.param(mod.id, mod.code, c.p, v)); };
+      s.onchange = () => { const v = parseInt(s.value, 10); mod.values[c.p] = v; markDirty(); remember(""); send(msg.param(mod.id, mod.code, c.p, v)); };
       row.append(lab, document.createElement("span"), s);
     }
     params.appendChild(row);
@@ -939,6 +979,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 async function applyPrst(p) {
   if (!midiOut) { toast("Collega prima il Matribox"); return; }
   $("readState").textContent = "Caricamento di " + p.name;
+  if (preset) { undoStack.push(snap(preset)); redoStack.length = 0; keepHistory = true; }
   const out = prstMessages(p);
   for (const m of out) { midiOut.send(m); await wait(12); }
   log("Import: inviati " + out.length + " messaggi per " + p.name);
@@ -983,7 +1024,7 @@ function endRename(keep) {
   const name = inp.value.replace(/[^\x20-\x7E]/g, "").trim().slice(0, 11);
   inp.hidden = true; $("curName").hidden = false;
   if (keep && name && name !== preset.name) {
-    preset.name = name; markDirty(); renderHeader();
+    preset.name = name; markDirty(); remember(""); renderHeader();
     toast("Nome cambiato: premi Salva per scriverlo sul pedale");
   }
 }
@@ -1025,6 +1066,160 @@ function initHeaderControls() {
   $("pickSearch").oninput = renderPicker;
   $("pickClose").onclick = () => $("pickDlg").close();
   $("pickDlg").onclick = e => { if (e.target === $("pickDlg")) $("pickDlg").close(); };   // tocco fuori dal menu
+}
+
+// ---------- Annulla / ripeti ----------
+// Ogni modifica salva lo stato precedente. Annullare confronta lo stato attuale con quello
+// salvato e manda al pedale solo i comandi necessari per tornarci.
+const undoStack = [], redoStack = [];
+let lastState = null, lastKey = "", lastTime = 0, keepHistory = false;
+
+const snap = p => JSON.parse(JSON.stringify({
+  name: p.name, fs: p.fs, bpm: p.bpm, vol: p.vol,
+  mods: p.mods.map(m => ({ name: m.name, code: m.code, on: m.on, pos: m.pos, values: m.values })),
+}));
+
+function resetHistory() {
+  undoStack.length = 0; redoStack.length = 0;
+  lastState = preset ? snap(preset) : null; lastKey = "";
+  renderHistoryButtons();
+}
+
+// Chiamata dopo ogni modifica: "key" raggruppa i movimenti continui dello stesso slider.
+function remember(key) {
+  if (!preset || !lastState) return;
+  const now = Date.now();
+  const same = key && key === lastKey && now - lastTime < 900;
+  if (!same) { undoStack.push(lastState); if (undoStack.length > 100) undoStack.shift(); }
+  redoStack.length = 0;
+  lastState = snap(preset); lastKey = key; lastTime = now;
+  renderHistoryButtons();
+}
+
+function applyState(target) {
+  const out = [];
+  target.mods.forEach((t, k) => {
+    const m = preset.mods[k], id = k + 1;
+    const alg = (ALGORITHMS[t.name] || []).find(a => a.code === t.code);
+    if (m.code !== t.code) {
+      out.push(msg.model(id, t.code));
+      if (alg) for (const c of alg.c) out.push(msg.param(id, t.code, c.p, t.values[c.p]));
+    } else if (alg) {
+      for (const c of alg.c) if (Math.abs(m.values[c.p] - t.values[c.p]) > 1e-4) out.push(msg.param(id, t.code, c.p, t.values[c.p]));
+    }
+    if (m.on !== t.on) out.push(msg.onOff(id, t.on));
+  });
+  if (target.mods.some((t, k) => t.pos !== preset.mods[k].pos)) out.push(msg.chain(target.mods.map(t => t.pos)));
+  target.fs.forEach((v, s) => { if (v !== preset.fs[s]) out.push(msg.fs(s, v)); });
+  if (target.bpm !== preset.bpm) out.push(msg.setting(2, target.bpm));
+  if (target.vol !== preset.vol) out.push(msg.setting(3, target.vol));
+  for (const m of out) send(m);
+  // aggiorno lo stato locale senza rileggere
+  Object.assign(preset, { name: target.name, fs: [...target.fs], bpm: target.bpm, vol: target.vol });
+  target.mods.forEach((t, k) => Object.assign(preset.mods[k], { code: t.code, on: t.on, pos: t.pos, values: [...t.values] }));
+  lastState = snap(preset); lastKey = "";
+  dirty = undoStack.length > 0;
+  renderPlay(); renderHistoryButtons();
+  return out.length;
+}
+
+function undo() {
+  if (!preset || !undoStack.length) { toast("Niente da annullare"); return; }
+  redoStack.push(snap(preset));
+  applyState(undoStack.pop());
+  toast("Modifica annullata");
+}
+function redo() {
+  if (!preset || !redoStack.length) { toast("Niente da ripetere"); return; }
+  undoStack.push(snap(preset));
+  applyState(redoStack.pop());
+  toast("Modifica ripetuta");
+}
+function renderHistoryButtons() {
+  $("undoBtn").disabled = !undoStack.length;
+  $("redoBtn").disabled = !redoStack.length;
+}
+
+// ---------- Scorciatoie da tastiera ----------
+function typing(e) { const t = e.target; return t && (t.tagName === "INPUT" && t.type !== "range" || t.tagName === "SELECT" || t.isContentEditable); }
+function initShortcuts() {
+  $("undoBtn").onclick = undo; $("redoBtn").onclick = redo;
+  document.addEventListener("keydown", e => {
+    const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    if (document.querySelector("dialog[open]")) return;                       // le finestre gestiscono i loro tasti
+    if (mod && k === "z" && !e.shiftKey) { if (typing(e)) return; e.preventDefault(); undo(); return; }
+    if (mod && (k === "y" || (k === "z" && e.shiftKey))) { if (typing(e)) return; e.preventDefault(); redo(); return; }
+    if (mod && k === "s") { e.preventDefault(); if (!$("saveOpen").disabled) openSave(); return; }
+    if (mod && k === "o") { e.preventDefault(); $("impOpen").click(); return; }
+    if (mod && k === "e") { e.preventDefault(); exportPrst(); return; }
+    if (mod || typing(e) || e.altKey) return;
+    if (e.target && e.target.type === "range") return;                         // le frecce muovono lo slider
+    if (k === "arrowleft" || k === "pageup") { e.preventDefault(); $("prevBtn").click(); }
+    else if (k === "arrowright" || k === "pagedown") { e.preventDefault(); $("nextBtn").click(); }
+    else if (k === "p") { e.preventDefault(); openPicker(); }
+    else if (k === "f2") { e.preventDefault(); startRename(); }
+    else if (k === " " && preset && $("v-play").classList.contains("active")) {
+      e.preventDefault(); toggleBlock(preset.mods.find(m => m.name === selected));
+    } else if (/^[1-9]$/.test(k) && preset) {                                   // 1-9: seleziona il blocco in quella posizione
+      const order = [...preset.mods].sort((a, b) => a.pos - b.pos);
+      selected = order[parseInt(k, 10) - 1].name; renderChain(); renderDetail();
+    }
+  });
+}
+
+// ---------- Trascinamento dei blocchi ----------
+// Mouse: si trascina subito. Dito: tieni premuto un attimo, poi trascina.
+let drag = null;
+function startDragWatch(e, mod, el) {
+  if (e.button > 0) return;
+  drag = { mod, el, x0: e.clientX, y0: e.clientY, id: e.pointerId, active: false, moved: false,
+           armed: e.pointerType === "mouse", timer: null };
+  if (!drag.armed) drag.timer = setTimeout(() => { if (drag) { drag.armed = true; el.classList.add("lift"); navigator.vibrate && navigator.vibrate(15); } }, 280);
+}
+function dragMove(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+  if (!drag.active) {
+    if (Math.hypot(dx, dy) < 8) return;
+    if (!drag.armed) { clearTimeout(drag.timer); drag = null; return; }          // movimento senza pressione lunga: scorrimento
+    drag.active = true; drag.moved = true;
+    drag.el.classList.add("dragging"); drag.el.setPointerCapture(e.pointerId);
+    $("chain").classList.add("sorting");
+  }
+  e.preventDefault();
+  drag.el.style.transform = `translate(${dx}px, ${dy * 0.15}px) scale(1.04)`;
+  drag.target = dropIndex(e.clientX);
+  showDropMarker(drag.target);
+}
+function dropIndex(x) {
+  const tiles = [...$("chain").querySelectorAll(".pedal")].filter(t => t !== drag.el);
+  let i = 0;
+  for (const t of tiles) { const r = t.getBoundingClientRect(); if (x > r.left + r.width / 2) i++; }
+  return i;                                      // posizione tra gli altri 8 blocchi
+}
+function showDropMarker(i) {
+  const tiles = [...$("chain").querySelectorAll(".pedal")].filter(t => t !== drag.el);
+  tiles.forEach((t, k) => { t.classList.toggle("drop-before", k === i); t.classList.toggle("drop-after", i === tiles.length && k === tiles.length - 1); });
+}
+function dragEnd(e) {
+  if (!drag || (e && e.pointerId !== drag.id)) return;
+  clearTimeout(drag.timer);
+  const d = drag; drag = null;
+  d.el.classList.remove("lift");
+  $("chain").classList.remove("sorting");
+  if (!d.active) return;
+  d.el.classList.remove("dragging"); d.el.style.transform = "";
+  $("chain").querySelectorAll(".pedal").forEach(t => t.classList.remove("drop-before", "drop-after"));
+  d.el.dataset.justDragged = "1";
+  if (d.target !== undefined) moveBlockTo(d.mod, d.target);
+}
+function moveBlockTo(mod, index) {
+  const order = [...preset.mods].sort((a, b) => a.pos - b.pos).filter(m => m !== mod);
+  order.splice(index, 0, mod);
+  if (order.every((m, k) => m.pos === k)) { renderChain(); return; }            // nessuno spostamento
+  order.forEach((m, k) => { m.pos = k; });
+  if (!send(msg.chain(preset.mods.map(m => m.pos)))) return;
+  selected = mod.name; markDirty(); remember("chain"); renderChain(); renderDetail();
 }
 
 // ---------- Libreria ----------
@@ -1241,9 +1436,13 @@ $("nextBtn").onclick = () => current && selectPreset(current.bank, current.slot 
 $("saveOpen").onclick = openSave;
 initImport();
 initHeaderControls();
+initShortcuts();
+document.addEventListener("pointermove", dragMove, { passive: false });
+document.addEventListener("pointerup", dragEnd);
+document.addEventListener("pointercancel", dragEnd);
 $("saveDlg").addEventListener("close", () => { if ($("saveDlg").returnValue === "ok") doSave(); });
-$("pBpm").oninput = () => { setRange("pBpm", $("pBpm").value); markDirty(); throttled("pbpm", () => send(msg.setting(2, parseInt($("pBpm").value, 10))), 120); };
-$("pVol").oninput = () => { setRange("pVol", $("pVol").value); markDirty(); throttled("pvol", () => send(msg.setting(3, parseInt($("pVol").value, 10))), 120); };
+$("pBpm").oninput = () => { setRange("pBpm", $("pBpm").value); preset.bpm = parseInt($("pBpm").value, 10); markDirty(); remember("pbpm"); throttled("pbpm", () => send(msg.setting(2, parseInt($("pBpm").value, 10))), 120); };
+$("pVol").oninput = () => { setRange("pVol", $("pVol").value); preset.vol = parseInt($("pVol").value, 10); markDirty(); remember("pvol"); throttled("pvol", () => send(msg.setting(3, parseInt($("pVol").value, 10))), 120); };
 $("bankP").onclick = () => { libBank = "P"; renderLibrary(); };
 $("bankF").onclick = () => { libBank = "F"; renderLibrary(); };
 $("libSearch").oninput = renderLibrary;
