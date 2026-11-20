@@ -171,15 +171,6 @@ input[type=range]::-moz-range-thumb { width: 30px; height: 30px; border-radius: 
 /* ---------- Impostazioni del preset ---------- */
 .globals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; margin-top: 22px; }
 
-/* ---------- Scaletta ---------- */
-.setlist { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; }
-.chip { flex: 0 0 auto; min-width: 150px; height: 64px; padding: 0 16px; border-radius: var(--r-md); background: var(--panel);
-  text-align: left; display: flex; flex-direction: column; justify-content: center; }
-.chip b { font: 600 14px/1 var(--display); color: var(--brass); letter-spacing: .04em; }
-.chip span { font: 600 20px/1.15 var(--display); white-space: nowrap; }
-.chip.active { background: var(--brass); color: var(--brass-ink); }
-.chip.active b { color: var(--brass-ink); }
-
 /* ---------- Libreria ---------- */
 .lib-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .lib-bar input { flex: 1 1 220px; height: var(--tap); border-radius: var(--r-md); border: 1px solid var(--rule);
@@ -236,7 +227,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* ---------- Barra di navigazione ---------- */
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
-  display: grid; grid-template-columns: repeat(5, 1fr); background: #15130F; border-top: 1px solid #ffffff0d; z-index: 5; }
+  display: grid; grid-template-columns: repeat(6, 1fr); background: #15130F; border-top: 1px solid #ffffff0d; z-index: 5; }
 .tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--dust); font-size: 14px; font-weight: 600; }
 .tabs svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .tabs button[aria-current="page"] { color: var(--brass); }
@@ -255,6 +246,95 @@ details.diag { margin-top: 26px; color: var(--dust); }
 details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
 .log { font: 12px/1.5 Consolas, ui-monospace, monospace; background: var(--panel); border-radius: var(--r-md); padding: 12px;
   max-height: 200px; overflow: auto; white-space: pre-wrap; user-select: text; }
+
+/* ---------- A/B ---------- */
+.btn.ab { display: inline-flex; padding: 4px; gap: 2px; height: 44px; }
+.btn.ab span { width: 34px; display: grid; place-items: center; border-radius: var(--r-sm); font: 700 18px/1 var(--display); color: var(--dust); }
+.btn.ab span.sel { background: var(--cream); color: var(--tolex); }
+.ab-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: #3a2f17; border: 1px solid var(--brass); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 12px; }
+body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { opacity: .45; pointer-events: none; }
+
+/* ---------- Brano (vista Suona) ---------- */
+.song-box { background: var(--panel); border-radius: var(--r-lg); padding: 14px; }
+.song-head { display: grid; grid-template-columns: 44px 1fr 44px; gap: 12px; align-items: center; }
+.song-head .btn { width: 44px; padding: 0; font-size: 22px; }
+.song-title small { display: block; color: var(--dust); font-size: 14px; }
+.song-title b { font: 700 30px/1.1 var(--display); }
+.song-note { margin: 8px 0 0; color: var(--brass); }
+.parts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.chip { flex: 0 0 auto; min-width: 150px; height: 64px; padding: 0 16px; border-radius: var(--r-md); background: var(--panel-2);
+  text-align: left; display: flex; flex-direction: column; justify-content: center; }
+.chip b { font: 600 14px/1 var(--display); color: var(--brass); letter-spacing: .04em; }
+.chip span { font: 600 20px/1.15 var(--display); white-space: nowrap; }
+.chip.active { background: var(--brass); color: var(--brass-ink); }
+.chip.active b { color: var(--brass-ink); }
+
+/* ---------- Scalette ---------- */
+.set-bar { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; margin-bottom: 14px; }
+.song-row { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.song-row .num { font: 700 24px/1 var(--display); color: var(--dust); text-align: center; }
+.song-main b { display: block; font: 600 22px/1.15 var(--display); }
+.song-main small { color: var(--dust); }
+.song-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+#songAdd { margin-top: 14px; }
+#songDlg { width: min(560px, 94vw); }
+#songDlg input { font-size: 18px; }
+.part-row { display: grid; grid-template-columns: 1fr minmax(120px, 1.2fr) 40px 40px 40px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.part-row input { margin: 0; height: 44px; font-size: 16px !important; }
+.part-row .pk { text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#songDlg .actions { align-items: center; }
+
+/* ---------- Libreria: ricerca per effetto ---------- */
+.item .go small.hits { display: block; color: var(--brass); font-size: 12px; line-height: 1.3; margin-top: 2px; }
+.item .go small.hits:empty { display: none; }
+.scan { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; margin-top: 16px;
+  background: var(--panel); border-radius: var(--r-md); padding: 12px 14px; }
+.scan .hint { margin: 0 0 6px; }
+
+/* ---------- Modalità palco ---------- */
+.stage-btn { display: inline-flex; align-items: center; gap: 6px; }
+.stage-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+body.staging { overflow: hidden; }
+.palco { position: fixed; inset: 0; z-index: 30; background: #0F0E0C; display: grid;
+  grid-template-rows: auto 1fr auto auto; gap: 14px; padding: max(16px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom)); }
+.st-top { display: flex; justify-content: space-between; align-items: center; color: var(--dust); font-size: 17px; }
+.st-mid { display: flex; flex-direction: column; justify-content: center; text-align: center; min-height: 0; }
+.st-song { font: 700 clamp(48px, 9vw, 120px)/.95 var(--display); }
+.st-note { color: var(--brass); font-size: clamp(18px, 2.4vw, 28px); margin: 12px 0 0; }
+.st-parts { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.st-part { min-width: 170px; min-height: 84px; padding: 8px 20px; border-radius: var(--r-lg); background: var(--panel);
+  display: flex; flex-direction: column; justify-content: center; }
+.st-part b { font: 600 15px/1 var(--display); color: var(--dust); }
+.st-part span { font: 700 30px/1.1 var(--display); }
+.st-part.active { background: var(--brass); color: var(--brass-ink); }
+.st-part.active b { color: var(--brass-ink); }
+.st-preset { margin-top: 22px; color: var(--dust); font: 600 clamp(22px, 3vw, 34px)/1.2 var(--display); }
+.st-preset b { color: var(--brass); }
+.st-preset em { font-style: normal; color: var(--brass); font-size: .7em; }
+.st-blocks { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; }
+.st-led { --c: var(--dust); height: 86px; border-radius: var(--r-md); background: var(--panel); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px; font: 700 20px/1 var(--display); color: var(--dust); }
+.st-led i { width: 20px; height: 20px; border-radius: 50%; background: #3a3630; }
+.st-led.on { color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--panel)); }
+.st-led.on i { background: var(--c); box-shadow: 0 0 16px var(--c); }
+.st-nav { display: grid; grid-template-columns: 1fr 3fr; gap: 12px; }
+.st-go { height: 120px; border-radius: var(--r-lg); background: var(--panel); font: 700 56px/1 var(--display); color: var(--dust); }
+.st-go.next { background: var(--brass); color: var(--brass-ink); display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto;
+  align-items: center; text-align: left; padding: 0 28px; column-gap: 16px; }
+.st-go.next small { font: 600 18px/1 var(--text); opacity: .75; }
+.st-go.next span { grid-row: 2; font: 700 clamp(28px, 4vw, 48px)/1.05 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-go.next i { grid-row: 1 / 3; grid-column: 2; font-style: normal; font-size: 72px; }
+@media (max-width: 760px) {
+  .st-blocks { grid-template-columns: repeat(5, 1fr); }
+  .st-led { height: 64px; }
+  .st-go { height: 96px; }
+  .set-bar { grid-template-columns: 1fr 1fr 1fr; }
+  .set-bar select { grid-column: 1 / -1; }
+  .song-row { grid-template-columns: 28px 1fr; }
+  .song-acts { grid-column: 1 / -1; justify-content: flex-start; }
+  .tabs button { font-size: 12px; }
+}
 
 /* ---------- Adattamenti ---------- */
 @media (max-width: 900px) {
@@ -283,6 +363,8 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
   <div class="brand">Matribox <span>Remote</span></div>
   <div class="link" id="link" role="status"><i></i><span id="linkText">Non collegato</span></div>
   <button class="btn small" id="connectBtn">Collega</button>
+  <button class="btn small stage-btn" id="stageOpen" title="Modalità palco (L)">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Palco</button>
 </header>
 
 <main class="wrap">
@@ -309,6 +391,8 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
               <button class="btn small icon" id="redoBtn" aria-label="Ripeti la modifica annullata" title="Ripeti (Ctrl+Y)" disabled>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
             </span>
+            <button class="btn small ab" id="abBtn" title="Confronta originale e modifiche (A)" aria-label="Confronta A originale e B modifiche" disabled>
+              <span id="abA">A</span><span id="abB" class="sel">B</span></button>
             <span id="readState">Lettura del preset</span>
             <span class="dirty" id="dirty">Modificato, non salvato</span>
             <span class="file-btns">
@@ -321,6 +405,11 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
         </div>
         <button class="nav" id="nextBtn" aria-label="Preset successivo">›</button>
       </section>
+
+      <div class="ab-banner" id="abBanner" hidden>
+        <span>Stai ascoltando <b>A</b>, il preset originale. Le modifiche sono in pausa.</span>
+        <button class="btn small primary" id="abBack">Torna a B</button>
+      </div>
 
       <section class="block" aria-label="Catena del segnale">
         <div class="chain" id="chain"></div>
@@ -338,9 +427,8 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
       </section>
 
       <section class="block">
-        <h2>Scaletta</h2>
-        <div class="setlist" id="setlist"></div>
-        <p class="hint" id="setlistHint">Aggiungi preset alla scaletta con la stella nella Libreria.</p>
+        <h2>Brano</h2>
+        <div class="song-box" id="songBox"></div>
       </section>
     </div>
   </div>
@@ -354,10 +442,13 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
           <button id="bankP" aria-pressed="true">Utente</button>
           <button id="bankF" aria-pressed="false">Fabbrica</button>
         </div>
-        <input id="libSearch" type="search" placeholder="Cerca per nome" aria-label="Cerca preset">
+        <input id="libSearch" type="search" placeholder="Cerca per nome o per effetto (es. Fuzz, Tape)" aria-label="Cerca preset per nome o effetto">
       </div>
       <div class="grid" id="grid"></div>
-      <p class="hint">I nomi sono quelli letti dal pedale. Quando salvi da qui, il nuovo nome si aggiorna anche nella libreria.</p>
+      <div class="scan">
+        <div><p class="hint" id="scanState"></p><div class="meter"><div id="scanBar"></div></div></div>
+        <button class="btn" id="scanBtn">Leggi tutti i preset dal pedale</button>
+      </div>
       <details class="diag">
         <summary>Scorciatoie da tastiera</summary>
         <table class="keys">
@@ -370,6 +461,8 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
           <tr><td>F2</td><td>Rinomina il preset</td></tr>
           <tr><td>1 … 9</td><td>Apri il blocco in quella posizione</td></tr>
           <tr><td>Spazio</td><td>Accendi o spegni il blocco aperto</td></tr>
+          <tr><td>A</td><td>Confronta originale (A) e modifiche (B)</td></tr>
+          <tr><td>L</td><td>Modalità palco; dentro: ← → parte o brano, Esc per uscire</td></tr>
         </table>
         <p class="hint">Sul tablet usa i pulsanti di annullamento accanto al nome. Per spostare un blocco trascinalo; col dito tienilo premuto un attimo prima di trascinare.</p>
       </details>
@@ -377,6 +470,23 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
         <summary>Diagnostica MIDI</summary>
         <div class="log" id="log"></div>
       </details>
+    </section>
+  </div>
+
+  <!-- ===== Scalette ===== -->
+  <div class="view" id="v-sets">
+    <section class="block">
+      <h2>Scalette</h2>
+      <div class="set-bar">
+        <select class="field" id="setSel" aria-label="Scaletta"></select>
+        <button class="btn" id="setNew">Nuova</button>
+        <button class="btn" id="setRename">Rinomina</button>
+        <button class="btn" id="setDelete">Elimina</button>
+      </div>
+      <div id="songList"></div>
+      <button class="btn primary" id="songAdd">Aggiungi brano</button>
+      <p class="hint">Un brano può usare più preset, per esempio strofa e assolo. In Suona e in modalità palco il pulsante
+        successivo passa alla parte seguente e poi al brano dopo. Se il brano ha un tempo, la batteria si regola da sola.</p>
     </section>
   </div>
 
@@ -454,6 +564,8 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
 <nav class="tabs" aria-label="Sezioni">
   <button data-view="v-play" aria-current="page">
     <svg viewBox="0 0 24 24"><rect x="3" y="7" width="5" height="10" rx="1"/><rect x="10" y="7" width="5" height="10" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/></svg>Suona</button>
+  <button data-view="v-sets">
+    <svg viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>Scalette</button>
   <button data-view="v-lib">
     <svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg>Libreria</button>
   <button data-view="v-drum">
@@ -501,6 +613,42 @@ details.diag summary { cursor: pointer; min-height: 44px; display: flex; align-i
   </div>
   <div class="pick-list" id="pickList"></div>
 </dialog>
+
+<dialog id="songDlg">
+  <form method="dialog">
+    <h2 id="songTitle">Nuovo brano</h2>
+    <label class="muted" for="sgTitle">Titolo</label>
+    <input id="sgTitle" maxlength="60" autocomplete="off">
+    <label class="muted" for="sgNote">Nota per il palco</label>
+    <input id="sgNote" maxlength="120" placeholder="Es. capo al 2° tasto, accordatura Drop D" autocomplete="off">
+    <label class="muted" for="sgBpm">Tempo della batteria (facoltativo)</label>
+    <input id="sgBpm" type="number" min="40" max="250" placeholder="bpm">
+    <p class="muted" style="margin:14px 0 6px">Preset del brano, in ordine</p>
+    <div id="sgParts"></div>
+    <button type="button" class="btn small" id="sgAddPart">Aggiungi parte</button>
+    <div class="actions">
+      <button type="button" class="btn" id="sgDelete">Elimina brano</button>
+      <span style="flex:1"></span>
+      <button class="btn" value="cancel">Annulla</button>
+      <button class="btn primary" value="ok">Salva brano</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="palco" id="stage" hidden role="dialog" aria-label="Modalità palco">
+  <div class="st-top"><span id="stSet"></span><button class="btn" id="stClose">Esci</button></div>
+  <div class="st-mid">
+    <div class="st-song" id="stSong"></div>
+    <p class="st-note" id="stNote"></p>
+    <div class="st-parts" id="stParts"></div>
+    <div class="st-preset"><b id="stSlot"></b> <span id="stName"></span> <em id="stDirty" hidden>modificato</em></div>
+  </div>
+  <div class="st-blocks" id="stBlocks"></div>
+  <div class="st-nav">
+    <button class="st-go" id="stPrev" aria-label="Indietro">‹</button>
+    <button class="st-go next" id="stNext"><small>Successivo</small><span id="stNextTxt"></span><i>›</i></button>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status"></div>
 
@@ -561,7 +709,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
 };
-let setlist = store.get("matribox.setlist", ["P97", "P98"]);
+
 
 function log(text) {
   const el = $("log");
@@ -613,6 +761,7 @@ function send(bytes) {
 function onMessage(ev) {
   const d = Array.from(ev.data);
   if (!HEADER.every((b, i) => d[i] === b)) { log("← " + hex(d)); return; }
+  if (storedHandle(d)) return;
   if (readHandle(d)) return;
   if (settingsHandle(d)) return;
   if (d[8] === 0x12 && d[9] === 0x00 && d[10] === 0x02) {          // cambio preset dal pedale
@@ -857,20 +1006,6 @@ function renderDetail() {
   box.append(head, moveRow, fsRow, params);
 }
 
-function renderSetlist() {
-  const wrap = $("setlist"); wrap.innerHTML = "";
-  $("setlistHint").hidden = setlist.length > 0;
-  for (const key of setlist) {
-    const bank = key[0], slot = parseInt(key.slice(1), 10);
-    const b = document.createElement("button");
-    b.className = "chip" + (current && label(current.bank, current.slot) === key ? " active" : "");
-    b.innerHTML = "<b></b><span></span>";
-    b.querySelector("b").textContent = key; b.querySelector("span").textContent = presetName(bank, slot);
-    b.onclick = () => selectPreset(bank, slot);
-    wrap.appendChild(b);
-  }
-}
-
 // ---------- Salvataggio ----------
 function openSave() {
   if (!current || current.bank !== "P") return;
@@ -878,6 +1013,7 @@ function openSave() {
   $("saveTitle").textContent = "Salva in " + slot;
   $("saveNote").textContent = `Il preset salvato in ${slot} verrà sostituito con le impostazioni attuali.`;
   $("svName").value = preset ? preset.name : presetName("P", current.slot);
+  $("saveDlg").returnValue = "";
   $("saveDlg").showModal();
   $("svName").select();
 }
@@ -1030,7 +1166,7 @@ function endRename(keep) {
 }
 
 // ---------- Menu dei preset toccando il numero ----------
-let pickBank = "P";
+let pickBank = "P", pickCallback = null;
 function openPicker() {
   pickBank = current ? current.bank : "P";
   $("pickSearch").value = "";
@@ -1051,7 +1187,7 @@ function renderPicker() {
     if (current && label(current.bank, current.slot) === key) b.className = "active";
     b.innerHTML = "<b></b><span></span>";
     b.querySelector("b").textContent = key; b.querySelector("span").textContent = name;
-    b.onclick = () => { $("pickDlg").close(); selectPreset(pickBank, s); };
+    b.onclick = () => { $("pickDlg").close(); if (pickCallback) { const cb = pickCallback; pickCallback = null; cb(pickBank, s); } else selectPreset(pickBank, s); };
     wrap.appendChild(b);
   }
   if (!wrap.children.length) wrap.innerHTML = '<p class="hint">Nessun preset con questo nome.</p>';
@@ -1065,6 +1201,7 @@ function initHeaderControls() {
   $("pickF").onclick = () => { pickBank = "F"; renderPicker(); };
   $("pickSearch").oninput = renderPicker;
   $("pickClose").onclick = () => $("pickDlg").close();
+  $("pickDlg").addEventListener("close", () => { setTimeout(() => { pickCallback = null; }, 0); });
   $("pickDlg").onclick = e => { if (e.target === $("pickDlg")) $("pickDlg").close(); };   // tocco fuori dal menu
 }
 
@@ -1096,7 +1233,7 @@ function remember(key) {
   renderHistoryButtons();
 }
 
-function applyState(target) {
+function applyState(target, track = true) {
   const out = [];
   target.mods.forEach((t, k) => {
     const m = preset.mods[k], id = k + 1;
@@ -1117,8 +1254,7 @@ function applyState(target) {
   // aggiorno lo stato locale senza rileggere
   Object.assign(preset, { name: target.name, fs: [...target.fs], bpm: target.bpm, vol: target.vol });
   target.mods.forEach((t, k) => Object.assign(preset.mods[k], { code: t.code, on: t.on, pos: t.pos, values: [...t.values] }));
-  lastState = snap(preset); lastKey = "";
-  dirty = undoStack.length > 0;
+  if (track) { lastState = snap(preset); lastKey = ""; dirty = undoStack.length > 0; }
   renderPlay(); renderHistoryButtons();
   return out.length;
 }
@@ -1223,32 +1359,6 @@ function moveBlockTo(mod, index) {
 }
 
 // ---------- Libreria ----------
-function renderLibrary() {
-  const wrap = $("grid"); wrap.innerHTML = "";
-  $("bankP").setAttribute("aria-pressed", String(libBank === "P"));
-  $("bankF").setAttribute("aria-pressed", String(libBank === "F"));
-  const q = $("libSearch").value.trim().toLowerCase();
-  for (let s = 1; s <= 99; s++) {
-    const key = label(libBank, s), name = presetName(libBank, s);
-    if (q && !name.toLowerCase().includes(q) && !key.toLowerCase().includes(q)) continue;
-    const el = document.createElement("div");
-    el.className = "item" + (current && label(current.bank, current.slot) === key ? " active" : "");
-    el.innerHTML = '<button class="go"><b></b><span></span></button><button class="star">★</button>';
-    el.querySelector("b").textContent = key; el.querySelector("span").textContent = name;
-    const star = el.querySelector(".star"), inList = setlist.includes(key);
-    star.setAttribute("aria-pressed", String(inList));
-    star.setAttribute("aria-label", (inList ? "Togli dalla scaletta " : "Aggiungi alla scaletta ") + key);
-    el.querySelector(".go").onclick = () => selectPreset(libBank, s);
-    star.onclick = () => {
-      setlist = inList ? setlist.filter(k => k !== key) : [...setlist, key];
-      store.set("matribox.setlist", setlist); renderLibrary(); renderSetlist();
-      toast(inList ? key + " tolto dalla scaletta" : key + " aggiunto alla scaletta");
-    };
-    wrap.appendChild(el);
-  }
-  if (!wrap.children.length) wrap.innerHTML = '<p class="hint">Nessun preset con questo nome.</p>';
-}
-
 // ---------- Batteria ----------
 let drumPlaying = false, taps = [];
 function setDrumBpm(bpm, sendIt = true) {
@@ -1428,6 +1538,494 @@ function showView(id) {
   window.scrollTo({ top: 0 });
 }
 
+
+// =====================================================================
+// Matribox Remote – funzioni aggiuntive:
+// confronto A/B, copia/incolla dei blocchi, ricerca per effetto,
+// scalette con brani a più preset, modalità palco.
+// =====================================================================
+
+// ---------- Confronto A/B ----------
+// A = il preset com'era quando è stato letto (o salvato), B = le modifiche in corso.
+let abBase = null, abB = null, abOnA = false;
+
+const _resetHistory = resetHistory;
+resetHistory = function () {
+  _resetHistory();
+  abBase = preset ? snap(preset) : null; abB = null; abOnA = false;
+  renderAB();
+};
+
+function toggleAB() {
+  if (!preset || !abBase) return;
+  if (!abOnA) {
+    if (!dirty) { toast("Nessuna modifica da confrontare"); return; }
+    abB = snap(preset); abOnA = true;
+    applyState(abBase, false);
+    toast("Ascolti A: il preset originale");
+  } else {
+    abOnA = false;
+    applyState(abB, false); abB = null;
+    toast("Ascolti B: le tue modifiche");
+  }
+  renderAB();
+}
+
+function renderAB() {
+  const on = !!(preset && dirty) || abOnA;
+  $("abBtn").disabled = !on;
+  $("abBtn").setAttribute("aria-pressed", String(abOnA));
+  $("abA").classList.toggle("sel", abOnA); $("abB").classList.toggle("sel", !abOnA);
+  document.body.classList.toggle("ab-a", abOnA);
+  $("abBanner").hidden = !abOnA;
+}
+
+// mentre si ascolta A, non si modifica: l'unica azione è tornare a B
+const _markDirty = markDirty;
+markDirty = function () { _markDirty(); renderAB(); };
+
+// ---------- Copia / incolla di un blocco ----------
+let clip = store.get("matribox.clip", null);
+
+function copyBlock(mod) {
+  const alg = algOf(mod);
+  clip = { module: mod.name, name: alg ? alg.name : "", code: mod.code, values: [...mod.values], on: mod.on };
+  store.set("matribox.clip", clip);
+  toast(`Copiato ${clip.name} (${mod.name})`);
+  renderDetail();
+}
+
+function canPaste(mod) {
+  return clip && (ALGORITHMS[mod.name] || []).some(a => a.code === clip.code);
+}
+
+function pasteBlock(mod) {
+  if (!canPaste(mod)) return;
+  const alg = (ALGORITHMS[mod.name] || []).find(a => a.code === clip.code);
+  if (mod.code !== clip.code) send(msg.model(mod.id, clip.code));
+  for (const c of alg.c) send(msg.param(mod.id, clip.code, c.p, clip.values[c.p]));
+  if (mod.on !== clip.on) send(msg.onOff(mod.id, clip.on));
+  mod.code = clip.code; mod.values = [...clip.values]; mod.on = clip.on;
+  markDirty(); remember("");
+  renderChain(); renderDetail();
+  toast(`Incollato ${clip.name} in ${mod.name}`);
+}
+
+// aggiunge i pulsanti Copia/Incolla al pannello del blocco
+const _renderDetail = renderDetail;
+renderDetail = function () {
+  _renderDetail();
+  if (!preset) return;
+  const mod = preset.mods.find(m => m.name === selected);
+  const row = document.createElement("div"); row.className = "row-fs";
+  row.innerHTML = '<span class="muted">Blocco</span><div class="seg"></div><span class="muted clipinfo"></span>';
+  const seg = row.querySelector(".seg");
+  const cp = document.createElement("button"); cp.textContent = "Copia"; cp.onclick = () => copyBlock(mod);
+  const ps = document.createElement("button"); ps.textContent = "Incolla"; ps.disabled = !canPaste(mod); ps.onclick = () => pasteBlock(mod);
+  seg.append(cp, ps);
+  row.querySelector(".clipinfo").textContent = clip ? `In memoria: ${clip.name} da ${clip.module}` : "";
+  const params = $("detail").querySelector(".params");
+  $("detail").insertBefore(row, params);
+};
+
+// ---------- Lettura di tutti i preset salvati (indice per la ricerca) ----------
+// Sequenza come l'editor: 11 13 01 00 00 <banco> <indice>, risposte 12 13 01 ...
+let stored = null;              // lettura in corso di un preset salvato
+let index = store.get("matribox.index", null);   // { date, P: [...], F: [...] }
+let scanning = false;
+
+// i nomi letti dal pedale aggiornano quelli incorporati nella pagina
+(function applySavedNames() {
+  const n = store.get("matribox.names", null);
+  if (n && n.P && n.F) { PRESET_NAMES.P = n.P; PRESET_NAMES.F = n.F; }
+})();
+
+function storedHandle(d) {
+  if (!(d[8] === 0x12 && d[9] === 0x13 && d[10] === 0x01)) return false;
+  if (!stored) return true;
+  const step = d[12], bank = d[13], idx = d[14];
+  if (step === 0x01) {
+    midiOut.send([...HEADER, 0x12, 0x13, 0x01, 0x00, 0x02, bank, idx, 0x01, 0xF7]);
+  } else if (step === 0x03) {
+    const chunk = d[16];
+    stored.chunks[chunk] = d.slice(17, -1);
+    midiOut.send([...HEADER, 0x12, 0x13, 0x01, 0x00, 0x04, bank, idx, 0x00, chunk, 0x01, 0xF7]);
+  } else if (step === 0x05) {
+    const nib = Object.keys(stored.chunks).map(Number).sort((a, b) => a - b).flatMap(k => stored.chunks[k]);
+    const done = stored.resolve; clearTimeout(stored.timer); stored = null;
+    done(unNibble(nib));
+  }
+  return true;
+}
+
+function readStored(bank, idx) {
+  return new Promise((resolve, reject) => {
+    stored = { chunks: {}, resolve, timer: setTimeout(() => { stored = null; reject(new Error("tempo scaduto")); }, 3000) };
+    midiOut.send([...HEADER, 0x11, 0x13, 0x01, 0x00, 0x00, BANKS[bank], idx, 0xF7]);
+  });
+}
+
+function summarize(b) {
+  const dv = new DataView(new Uint8Array(b).buffer);
+  let name = "";
+  for (let i = 2; i < 14 && b[i]; i++) name += String.fromCharCode(b[i]);
+  return {
+    name: name.trim(),
+    m: MODULES.map((n, k) => [dv.getUint32(32 + 4 * k, true), dv.getUint16(608 + 2 * k, true) === 1 ? 1 : 0]),
+  };
+}
+
+async function scanAll() {
+  if (!midiOut || !midiIn) { toast("Collega prima il Matribox"); return; }
+  if (scanning) return;
+  scanning = true; $("scanBtn").disabled = true;
+  const next = { date: Date.now(), P: [], F: [] };
+  let n = 0, errors = 0;
+  try {
+    for (const bank of ["P", "F"]) {
+      for (let i = 0; i < 99; i++) {
+        while (reading) await wait(50);                 // non sovrapporsi alla lettura del preset attivo
+        try { next[bank][i] = summarize(await readStored(bank, i)); }
+        catch (e) { errors++; next[bank][i] = index && index[bank] ? index[bank][i] : null; }
+        n++;
+        $("scanBar").style.width = (n / 198 * 100) + "%";
+        $("scanState").textContent = `Lettura ${n} di 198`;
+      }
+    }
+    index = next; store.set("matribox.index", index);
+    for (const bank of ["P", "F"]) index[bank].forEach((p, i) => { if (p && p.name) PRESET_NAMES[bank][i] = p.name; });
+    store.set("matribox.names", { P: PRESET_NAMES.P, F: PRESET_NAMES.F });
+    toast(errors ? `Letti ${198 - errors} preset su 198` : "Tutti i 198 preset letti dal pedale");
+  } finally {
+    scanning = false; $("scanBtn").disabled = false; $("scanBar").style.width = "0";
+    renderIndexInfo(); renderLibrary(); renderSetlist(); renderHeader();
+  }
+}
+
+function renderIndexInfo() {
+  $("scanState").textContent = index
+    ? "Effetti letti dal pedale il " + new Date(index.date).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })
+    : "Per cercare per effetto, leggi una volta tutti i preset dal pedale (circa un minuto).";
+}
+
+const algName = (module, code) => { const a = (ALGORITHMS[module] || []).find(x => x.code === code); return a ? a.name : ""; };
+
+// Effetti di un preset che corrispondono alla ricerca: [["FX2", "Blues OD"], ...]
+function effectHits(bank, i, q) {
+  const p = index && index[bank] && index[bank][i];
+  if (!p || !q) return [];
+  const hits = [];
+  p.m.forEach(([code, on], k) => {
+    const n = algName(MODULES[k], code);
+    if (n && n.toLowerCase().includes(q)) hits.push([MODULES[k], n, on]);
+  });
+  return hits;
+}
+
+// ---------- Libreria (con ricerca per effetto e stella → scaletta) ----------
+function renderLibrary() {
+  const wrap = $("grid"); wrap.innerHTML = "";
+  $("bankP").setAttribute("aria-pressed", String(libBank === "P"));
+  $("bankF").setAttribute("aria-pressed", String(libBank === "F"));
+  const q = $("libSearch").value.trim().toLowerCase();
+  for (let s = 1; s <= 99; s++) {
+    const key = label(libBank, s), name = presetName(libBank, s);
+    const byName = !q || name.toLowerCase().includes(q) || key.toLowerCase().includes(q);
+    const hits = effectHits(libBank, s - 1, q);
+    if (!byName && !hits.length) continue;
+    const el = document.createElement("div");
+    el.className = "item" + (current && label(current.bank, current.slot) === key ? " active" : "");
+    el.innerHTML = '<button class="go"><b></b><span></span><small class="hits"></small></button><button class="star">★</button>';
+    el.querySelector("b").textContent = key; el.querySelector("span").textContent = name;
+    if (hits.length) el.querySelector(".hits").textContent = hits.map(([m, n, on]) => `${m} ${n}${on ? "" : " (spento)"}`).join(", ");
+    const star = el.querySelector(".star"), inList = inActiveList(key);
+    star.setAttribute("aria-pressed", String(inList));
+    star.setAttribute("aria-label", (inList ? "Già in scaletta: " : "Aggiungi alla scaletta ") + key);
+    el.querySelector(".go").onclick = () => selectPreset(libBank, s);
+    star.onclick = () => { addSongFromPreset(key); renderLibrary(); };
+    wrap.appendChild(el);
+  }
+  if (!wrap.children.length) wrap.innerHTML = q && !index
+    ? '<p class="hint">Nessun preset con questo nome. Per cercare anche negli effetti, leggi i preset dal pedale qui sotto.</p>'
+    : '<p class="hint">Nessun preset trovato.</p>';
+}
+
+// ---------- Scalette ----------
+// { lists: [{ id, name, songs: [{ id, title, note, bpm, parts: [{ key, label }] }] }], active, song, part }
+const uid = () => Math.random().toString(36).slice(2, 9);
+let sets = store.get("matribox.setlists", null);
+if (!sets) {                                     // migrazione dalla scaletta semplice
+  const old = store.get("matribox.setlist", ["P97", "P98"]);
+  sets = { lists: [{ id: uid(), name: "La mia scaletta", songs: old.map(k => ({ id: uid(), title: presetName(k[0], parseInt(k.slice(1), 10)) || k, note: "", bpm: null, parts: [{ key: k, label: "" }] })) }], active: null, song: 0, part: 0 };
+  sets.active = sets.lists[0].id;
+}
+const saveSets = () => store.set("matribox.setlists", sets);
+const activeList = () => sets.lists.find(l => l.id === sets.active) || sets.lists[0] || null;
+const keyOf = () => current ? label(current.bank, current.slot) : "";
+const inActiveList = key => { const l = activeList(); return !!(l && l.songs.some(s => s.parts.some(p => p.key === key))); };
+
+function ensureList() {
+  if (!sets.lists.length) { const l = { id: uid(), name: "La mia scaletta", songs: [] }; sets.lists.push(l); sets.active = l.id; }
+  return activeList();
+}
+
+function addSongFromPreset(key) {
+  const l = ensureList();
+  const [bank, slot] = [key[0], parseInt(key.slice(1), 10)];
+  l.songs.push({ id: uid(), title: presetName(bank, slot) || key, note: "", bpm: null, parts: [{ key, label: "" }] });
+  saveSets(); renderSetlist(); renderSets();
+  toast(`${key} aggiunto a "${l.name}" come nuovo brano`);
+}
+
+function goTo(songIdx, partIdx) {
+  const l = activeList(); if (!l || !l.songs.length) return;
+  songIdx = Math.max(0, Math.min(l.songs.length - 1, songIdx));
+  const song = l.songs[songIdx];
+  partIdx = Math.max(0, Math.min(song.parts.length - 1, partIdx));
+  const changedSong = songIdx !== sets.song;
+  sets.song = songIdx; sets.part = partIdx; saveSets();
+  const part = song.parts[partIdx];
+  if (part) selectPreset(part.key[0], parseInt(part.key.slice(1), 10));
+  if (changedSong && song.bpm) { setDrumBpm(song.bpm); }
+  renderSetlist(); renderStage();
+}
+
+// avanti/indietro nella scaletta: prima le parti del brano, poi il brano successivo
+function step(dir) {
+  const l = activeList();
+  if (!l || !l.songs.length) { if (current) selectPreset(current.bank, current.slot + dir); return; }
+  const song = l.songs[sets.song] || l.songs[0];
+  let s = sets.song, p = sets.part + dir;
+  if (p >= song.parts.length) { s++; p = 0; }
+  else if (p < 0) { s--; p = s >= 0 ? (l.songs[s].parts.length - 1) : 0; }
+  if (s < 0 || s >= l.songs.length) { toast(dir > 0 ? "Fine della scaletta" : "Inizio della scaletta"); return; }
+  goTo(s, p);
+}
+
+function stepSong(dir) {
+  const l = activeList(); if (!l || !l.songs.length) return;
+  const s = sets.song + dir;
+  if (s < 0 || s >= l.songs.length) { toast(dir > 0 ? "Fine della scaletta" : "Inizio della scaletta"); return; }
+  goTo(s, 0);
+}
+
+function partButtons(song, cls) {
+  const frag = document.createDocumentFragment();
+  song.parts.forEach((p, i) => {
+    const b = document.createElement("button");
+    const active = keyOf() === p.key && (sets.part === i || song.parts.filter(x => x.key === p.key).length === 1);
+    b.className = cls + (active ? " active" : "");
+    b.innerHTML = "<b></b><span></span>";
+    b.querySelector("b").textContent = p.key;
+    b.querySelector("span").textContent = p.label || presetName(p.key[0], parseInt(p.key.slice(1), 10));
+    b.onclick = () => goTo(sets.song, i);
+    frag.appendChild(b);
+  });
+  return frag;
+}
+
+// pannello "Brano" nella vista Suona
+function renderSetlist() {
+  const box = $("songBox"); if (!box) return;
+  const l = activeList();
+  if (!l || !l.songs.length) {
+    box.innerHTML = '<p class="hint">Nessun brano in scaletta. Creane uno nella sezione Scalette, oppure tocca la stella di un preset nella Libreria.</p>';
+    return;
+  }
+  sets.song = Math.min(sets.song, l.songs.length - 1);
+  const song = l.songs[sets.song];
+  box.innerHTML = `<div class="song-head">
+      <button class="btn small" id="songPrev" aria-label="Brano precedente">‹</button>
+      <div class="song-title"><small></small><b></b></div>
+      <button class="btn small" id="songNext" aria-label="Brano successivo">›</button>
+    </div><p class="song-note"></p><div class="parts"></div>`;
+  box.querySelector("small").textContent = `${l.name}, brano ${sets.song + 1} di ${l.songs.length}` + (song.bpm ? `, ${song.bpm} bpm` : "");
+  box.querySelector(".song-title b").textContent = song.title;
+  box.querySelector(".song-note").textContent = song.note || "";
+  box.querySelector(".song-note").hidden = !song.note;
+  box.querySelector(".parts").appendChild(partButtons(song, "chip"));
+  $("songPrev").onclick = () => stepSong(-1);
+  $("songNext").onclick = () => stepSong(1);
+}
+
+// ---------- Vista Scalette: gestione ----------
+function renderSets() {
+  const sel = $("setSel"); sel.innerHTML = "";
+  for (const l of sets.lists) sel.append(new Option(`${l.name} (${l.songs.length})`, l.id, false, l.id === sets.active));
+  const l = activeList();
+  $("setRename").disabled = $("setDelete").disabled = !l;
+  const wrap = $("songList"); wrap.innerHTML = "";
+  if (!l) { wrap.innerHTML = '<p class="hint">Crea una scaletta per iniziare.</p>'; return; }
+  if (!l.songs.length) wrap.innerHTML = '<p class="hint">Scaletta vuota: aggiungi il primo brano.</p>';
+  l.songs.forEach((song, i) => {
+    const row = document.createElement("div"); row.className = "song-row";
+    row.innerHTML = `<span class="num"></span><div class="song-main"><b></b><small></small></div>
+      <div class="song-acts"><button class="btn small icon" aria-label="Sposta su">↑</button><button class="btn small icon" aria-label="Sposta giù">↓</button>
+      <button class="btn small">Modifica</button><button class="btn small primary">Suona</button></div>`;
+    row.querySelector(".num").textContent = i + 1;
+    row.querySelector("b").textContent = song.title;
+    row.querySelector("small").textContent = song.parts.map(p => (p.label ? p.label + " " : "") + p.key).join(" › ") + (song.bpm ? `, ${song.bpm} bpm` : "");
+    const [up, down, editB, play] = row.querySelectorAll("button");
+    up.disabled = i === 0; down.disabled = i === l.songs.length - 1;
+    up.onclick = () => { [l.songs[i - 1], l.songs[i]] = [l.songs[i], l.songs[i - 1]]; saveSets(); renderSets(); renderSetlist(); };
+    down.onclick = () => { [l.songs[i + 1], l.songs[i]] = [l.songs[i], l.songs[i + 1]]; saveSets(); renderSets(); renderSetlist(); };
+    editB.onclick = () => openSong(i);
+    play.onclick = () => { goTo(i, 0); showView("v-play"); };
+    wrap.appendChild(row);
+  });
+}
+
+// finestra di modifica di un brano
+let songDraft = null, songIdx = -1;
+function openSong(i) {
+  const l = ensureList();
+  songIdx = i;
+  songDraft = i >= 0 ? JSON.parse(JSON.stringify(l.songs[i]))
+    : { id: uid(), title: "", note: "", bpm: null, parts: [{ key: keyOf() || "P01", label: "" }] };
+  $("songTitle").textContent = i >= 0 ? "Modifica brano" : "Nuovo brano";
+  $("sgTitle").value = songDraft.title; $("sgNote").value = songDraft.note; $("sgBpm").value = songDraft.bpm || "";
+  $("sgDelete").hidden = i < 0;
+  renderParts();
+  $("songDlg").returnValue = "";
+  $("songDlg").showModal();
+}
+function renderParts() {
+  const wrap = $("sgParts"); wrap.innerHTML = "";
+  songDraft.parts.forEach((p, i) => {
+    const row = document.createElement("div"); row.className = "part-row";
+    row.innerHTML = `<input aria-label="Nome della parte" placeholder="Parte (es. Strofa)" maxlength="20">
+      <button type="button" class="btn small pk"></button>
+      <button type="button" class="btn small icon" aria-label="Sposta su">↑</button>
+      <button type="button" class="btn small icon" aria-label="Sposta giù">↓</button>
+      <button type="button" class="btn small icon" aria-label="Togli parte">✕</button>`;
+    const [inp] = row.querySelectorAll("input");
+    const [pk, up, down, del] = row.querySelectorAll("button");
+    inp.value = p.label; inp.oninput = () => { p.label = inp.value; };
+    pk.textContent = p.key + " " + presetName(p.key[0], parseInt(p.key.slice(1), 10));
+    pk.onclick = () => { pickCallback = (bank, slot) => { p.key = label(bank, slot); renderParts(); }; openPicker(); };
+    up.disabled = i === 0; down.disabled = i === songDraft.parts.length - 1; del.disabled = songDraft.parts.length === 1;
+    up.onclick = () => { [songDraft.parts[i - 1], songDraft.parts[i]] = [p, songDraft.parts[i - 1]]; renderParts(); };
+    down.onclick = () => { [songDraft.parts[i + 1], songDraft.parts[i]] = [p, songDraft.parts[i + 1]]; renderParts(); };
+    del.onclick = () => { songDraft.parts.splice(i, 1); renderParts(); };
+    wrap.appendChild(row);
+  });
+}
+function saveSong() {
+  const l = ensureList();
+  songDraft.title = $("sgTitle").value.trim() || presetName(songDraft.parts[0].key[0], parseInt(songDraft.parts[0].key.slice(1), 10)) || "Brano";
+  songDraft.note = $("sgNote").value.trim();
+  const bpm = parseInt($("sgBpm").value, 10); songDraft.bpm = bpm >= 40 && bpm <= 250 ? bpm : null;
+  if (songIdx >= 0) l.songs[songIdx] = songDraft; else l.songs.push(songDraft);
+  saveSets(); renderSets(); renderSetlist();
+  toast("Brano salvato");
+}
+
+function initSets() {
+  $("setSel").onchange = () => { sets.active = $("setSel").value; sets.song = 0; sets.part = 0; saveSets(); renderSets(); renderSetlist(); };
+  $("setNew").onclick = () => {
+    const name = prompt("Nome della nuova scaletta", "Concerto");
+    if (!name) return;
+    const l = { id: uid(), name: name.trim().slice(0, 40), songs: [] };
+    sets.lists.push(l); sets.active = l.id; sets.song = 0; sets.part = 0; saveSets(); renderSets(); renderSetlist();
+  };
+  $("setRename").onclick = () => {
+    const l = activeList(); const name = l && prompt("Nuovo nome della scaletta", l.name);
+    if (name) { l.name = name.trim().slice(0, 40); saveSets(); renderSets(); renderSetlist(); }
+  };
+  $("setDelete").onclick = () => {
+    const l = activeList();
+    if (!l || !confirm(`Eliminare la scaletta "${l.name}" con ${l.songs.length} brani?`)) return;
+    sets.lists = sets.lists.filter(x => x !== l); sets.active = sets.lists[0] ? sets.lists[0].id : null; sets.song = 0; sets.part = 0;
+    saveSets(); renderSets(); renderSetlist();
+  };
+  $("songAdd").onclick = () => openSong(-1);
+  $("sgAddPart").onclick = () => { songDraft.parts.push({ key: keyOf() || "P01", label: "" }); renderParts(); };
+  $("sgDelete").onclick = () => {
+    if (!confirm("Eliminare questo brano dalla scaletta?")) return;
+    activeList().songs.splice(songIdx, 1); sets.song = 0; sets.part = 0; saveSets();
+    $("songDlg").close("delete"); renderSets(); renderSetlist();
+  };
+  $("songDlg").addEventListener("close", () => { if ($("songDlg").returnValue === "ok") saveSong(); });
+  renderSets();
+}
+
+// ---------- Modalità palco ----------
+let wakeLock = null;
+async function keepAwake() {
+  try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) { log("Schermo sempre acceso non disponibile: " + e.message); }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !$("stage").hidden) keepAwake(); });
+
+function openStage() {
+  $("stage").hidden = false; document.body.classList.add("staging");
+  keepAwake();
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  renderStage();
+}
+function closeStage() {
+  $("stage").hidden = true; document.body.classList.remove("staging");
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+function renderStage() {
+  if ($("stage").hidden) return;
+  const l = activeList(), song = l && l.songs[sets.song];
+  $("stSet").textContent = song ? `${l.name}, brano ${sets.song + 1} di ${l.songs.length}` : "Nessuna scaletta";
+  $("stSong").textContent = song ? song.title : (preset ? preset.name : "--");
+  $("stNote").textContent = song && song.note ? song.note : ""; $("stNote").hidden = !(song && song.note);
+  const parts = $("stParts"); parts.innerHTML = "";
+  if (song && song.parts.length > 1) parts.appendChild(partButtons(song, "st-part"));
+  $("stSlot").textContent = keyOf() || "--";
+  $("stName").textContent = preset ? preset.name : (current ? presetName(current.bank, current.slot) : "--");
+  $("stDirty").hidden = !dirty;
+  const nextLabel = (() => {
+    if (!song) return "Successivo";
+    if (sets.part < song.parts.length - 1) return song.parts[sets.part + 1].label || "Parte successiva";
+    const n = l.songs[sets.song + 1]; return n ? n.title : "Fine";
+  })();
+  $("stNextTxt").textContent = nextLabel;
+  const blocks = $("stBlocks"); blocks.innerHTML = "";
+  if (preset) [...preset.mods].sort((a, b) => a.pos - b.pos).forEach(m => {
+    const b = document.createElement("button");
+    b.className = "st-led" + (m.on ? " on" : ""); b.style.setProperty("--c", `var(--c-${m.name})`);
+    b.innerHTML = "<i></i><span></span>"; b.querySelector("span").textContent = m.name;
+    b.setAttribute("aria-pressed", String(m.on)); b.setAttribute("aria-label", (m.on ? "Spegni " : "Accendi ") + m.name);
+    b.onclick = () => { toggleBlock(m); renderStage(); };
+    blocks.appendChild(b);
+  });
+}
+
+// aggiorna il palco quando cambia qualcosa nella vista principale
+const _renderHeader = renderHeader;
+renderHeader = function () { _renderHeader(); renderStage(); };
+const _renderChain = renderChain;
+renderChain = function () { _renderChain(); renderStage(); };
+
+// ---------- Avvio delle funzioni aggiuntive ----------
+function initFeatures() {
+  $("abBtn").onclick = toggleAB;
+  $("abBack").onclick = toggleAB;
+  $("scanBtn").onclick = scanAll;
+  $("stageOpen").onclick = openStage;
+  $("stClose").onclick = closeStage;
+  $("stPrev").onclick = () => step(-1);
+  $("stNext").onclick = () => step(1);
+  initSets(); renderIndexInfo(); renderAB();
+  document.addEventListener("keydown", e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || typing(e) || document.querySelector("dialog[open]")) return;
+    const k = e.key.toLowerCase();
+    if (!$("stage").hidden) {                       // tasti della modalità palco
+      if (k === "escape") { e.preventDefault(); closeStage(); }
+      else if (k === "arrowright" || k === "pagedown" || k === " ") { e.preventDefault(); e.stopImmediatePropagation(); step(1); }
+      else if (k === "arrowleft" || k === "pageup") { e.preventDefault(); e.stopImmediatePropagation(); step(-1); }
+      return;
+    }
+    if (k === "a" && preset) { e.preventDefault(); toggleAB(); }
+    else if (k === "l") { e.preventDefault(); openStage(); }
+  }, true);
+}
+
 // ---------- Avvio ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
 $("connectBtn").onclick = connect; $("connectBig").onclick = connect;
@@ -1451,7 +2049,7 @@ $("rcRefresh").onclick = () => listInputs().catch(e => { $("rcSrc").textContent 
 $("tuBtn").onclick = () => (tuner ? stopTuner() : startTuner());
 window.addEventListener("beforeunload", e => { if (dirty || takes.length) { e.preventDefault(); e.returnValue = ""; } });
 
-initDrum(); renderLibrary(); renderSetlist(); renderTakes();
+initDrum(); initFeatures(); renderLibrary(); renderSetlist(); renderTakes();
 showView(store.get("matribox.view", "v-play"));
 // App installabile e offline (solo su https o localhost)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
