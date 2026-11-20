@@ -298,7 +298,14 @@ body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { op
 body.staging { overflow: hidden; }
 .palco { position: fixed; inset: 0; z-index: 30; background: #0F0E0C; display: grid;
   grid-template-rows: auto 1fr auto auto; gap: 14px; padding: max(16px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom)); }
-.st-top { display: flex; justify-content: space-between; align-items: center; color: var(--dust); font-size: 17px; }
+.st-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--dust); font-size: 17px; }
+.st-top #stSet { flex: 1; }
+.fs-toggle { display: inline-flex; align-items: center; gap: 10px; }
+.fs-toggle i { width: 10px; height: 10px; border-radius: 50%; background: var(--dust); opacity: .5; }
+.fs-toggle[aria-pressed="true"] { border-color: var(--brass); color: var(--brass); }
+.fs-toggle[aria-pressed="true"] i { background: var(--brass); opacity: 1; box-shadow: 0 0 8px var(--brass); }
+.fs-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 14px; }
+.fs-row .hint { margin: 0; flex: 1; min-width: 220px; }
 .st-mid { display: flex; flex-direction: column; justify-content: center; text-align: center; min-height: 0; }
 .st-song { font: 700 clamp(48px, 9vw, 120px)/.95 var(--display); }
 .st-note { color: var(--brass); font-size: clamp(18px, 2.4vw, 28px); margin: 12px 0 0; }
@@ -483,6 +490,10 @@ body.staging { overflow: hidden; }
         <button class="btn" id="setRename">Rinomina</button>
         <button class="btn" id="setDelete">Elimina</button>
       </div>
+      <div class="fs-row">
+        <button class="btn fs-toggle" id="fsFollow" aria-pressed="false"><i></i>Footswitch seguono la scaletta</button>
+        <p class="hint">Quando è attivo, i pulsanti su e giù del pedale passano alla parte o al brano successivo della scaletta, invece che al preset vicino. Serve il pedale collegato all'app.</p>
+      </div>
       <div id="songList"></div>
       <button class="btn primary" id="songAdd">Aggiungi brano</button>
       <p class="hint">Un brano può usare più preset, per esempio strofa e assolo. In Suona e in modalità palco il pulsante
@@ -636,7 +647,7 @@ body.staging { overflow: hidden; }
 </dialog>
 
 <div class="palco" id="stage" hidden role="dialog" aria-label="Modalità palco">
-  <div class="st-top"><span id="stSet"></span><button class="btn" id="stClose">Esci</button></div>
+  <div class="st-top"><span id="stSet"></span><button class="btn fs-toggle" id="stFs" aria-pressed="false"><i></i>Footswitch: scaletta</button><button class="btn" id="stClose">Esci</button></div>
   <div class="st-mid">
     <div class="st-song" id="stSong"></div>
     <p class="st-note" id="stNote"></p>
@@ -768,6 +779,7 @@ function onMessage(ev) {
     const b = unNibble(d.slice(11, -1));
     if (b.length >= 4 && b[0] === 0 && b[2] === 0 && b[1] <= 1) {
       const bank = b[1] ? "F" : "P";
+      if (pedalFollow(bank, b[3] + 1)) return;
       setCurrent(bank, b[3] + 1);
       log("← preset " + label(bank, b[3] + 1) + " dal pedale");
       return;
@@ -1949,6 +1961,48 @@ function initSets() {
   renderSets();
 }
 
+// ---------- Footswitch del pedale che seguono la scaletta ----------
+// Il pedale non conosce la scaletta: quando passa al preset vicino (su/giù), l'app lo porta subito
+// alla parte successiva o precedente della scaletta attiva.
+let fsFollow = store.get("matribox.fsFollow", false);
+
+function renderFsFollow() {
+  for (const id of ["fsFollow", "stFs"]) { const b = $(id); if (b) b.setAttribute("aria-pressed", String(fsFollow)); }
+}
+function toggleFsFollow() {
+  fsFollow = !fsFollow; store.set("matribox.fsFollow", fsFollow); renderFsFollow();
+  const l = activeList();
+  toast(fsFollow ? (l && l.songs.length ? `I footswitch seguono "${l.name}"` : "Footswitch sulla scaletta: aggiungi prima qualche brano") : "I footswitch cambiano di nuovo i preset uno alla volta");
+}
+
+function pedalFollow(bank, slot) {
+  if (!fsFollow || !current || bank !== current.bank) return false;
+  const l = activeList(); if (!l || !l.songs.length) return false;
+  let dir = slot - current.slot;
+  if (dir === -98) dir = 1; else if (dir === 98) dir = -1;          // P99 → P01 e viceversa
+  if (dir !== 1 && dir !== -1) return false;                         // salto: lo lascio fare
+  sets.song = Math.min(sets.song, l.songs.length - 1);
+  const song = l.songs[sets.song], here = song.parts[sets.part];
+  let s = sets.song, p = sets.part;
+  if (here && here.key === keyOf()) {                                // sono sulla scaletta: avanti o indietro
+    p += dir;
+    if (p >= song.parts.length) { s++; p = 0; }
+    else if (p < 0) { s--; p = s >= 0 ? l.songs[s].parts.length - 1 : 0; }
+    if (s < 0 || s >= l.songs.length) { toast(dir > 0 ? "Fine della scaletta" : "Inizio della scaletta"); s = sets.song; p = sets.part; }
+  }                                                                  // altrimenti torno al punto della scaletta
+  const target = l.songs[s].parts[p];
+  dirty = false;                                                     // il pedale ha già lasciato il preset in modifica
+  log(`← footswitch ${dir > 0 ? "su" : "giù"}: scaletta → ${target.key}`);
+  if (target.key === label(bank, slot)) {                            // il pedale è già nel posto giusto
+    const changedSong = s !== sets.song;
+    sets.song = s; sets.part = p; saveSets();
+    setCurrent(bank, slot);
+    if (changedSong && l.songs[s].bpm) setDrumBpm(l.songs[s].bpm);
+    renderStage();
+  } else goTo(s, p);
+  return true;
+}
+
 // ---------- Modalità palco ----------
 let wakeLock = null;
 async function keepAwake() {
@@ -2010,6 +2064,9 @@ function initFeatures() {
   $("stageOpen").onclick = openStage;
   $("stClose").onclick = closeStage;
   $("stPrev").onclick = () => step(-1);
+  $("fsFollow").onclick = toggleFsFollow;
+  $("stFs").onclick = toggleFsFollow;
+  renderFsFollow();
   $("stNext").onclick = () => step(1);
   initSets(); renderIndexInfo(); renderAB();
   document.addEventListener("keydown", e => {
