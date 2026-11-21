@@ -756,7 +756,8 @@ function attach(access) {
   setLink(ok, ok ? "Collegato" : "Matribox non trovato: controlla il cavo USB");
   $("emptyPlay").hidden = ok; $("playArea").hidden = !ok;
   $("connectBtn").hidden = ok;
-  if (ok) scheduleRead(200);
+  if (ok) { scheduleRead(200); autoScan(); }
+  else autoScanned = false;              // al prossimo collegamento si rilegge di nuovo
   log(ok ? "Porte: " + midiOut.name + " / " + (midiIn && midiIn.name) : "Nessuna porta Matribox");
 }
 
@@ -1696,9 +1697,19 @@ function summarize(b) {
   };
 }
 
-async function scanAll() {
-  if (!midiOut || !midiIn) { toast("Collega prima il Matribox"); return; }
+// Appena il pedale si collega si rileggono in sottofondo tutti i preset, così i nomi nei menu
+// sono sempre quelli veri anche se gli slot sono stati cambiati da un'altra app o dal PC.
+let autoScanned = false;
+function autoScan() {
+  if (autoScanned) return;
+  autoScanned = true;
+  setTimeout(() => scanAll(true), 1500);
+}
+
+async function scanAll(quiet) {
+  if (!midiOut || !midiIn) { if (quiet) autoScanned = false; else toast("Collega prima il Matribox"); return; }
   if (scanning) return;
+  const before = JSON.stringify(PRESET_NAMES);
   scanning = true; $("scanBtn").disabled = true;
   const next = { date: Date.now(), P: [], F: [] };
   let n = 0, errors = 0;
@@ -1716,10 +1727,12 @@ async function scanAll() {
     index = next; store.set("matribox.index", index);
     for (const bank of ["P", "F"]) index[bank].forEach((p, i) => { if (p && p.name) PRESET_NAMES[bank][i] = p.name; });
     store.set("matribox.names", { P: PRESET_NAMES.P, F: PRESET_NAMES.F });
-    toast(errors ? `Letti ${198 - errors} preset su 198` : "Tutti i 198 preset letti dal pedale");
+    if (!quiet) toast(errors ? `Letti ${198 - errors} preset su 198` : "Tutti i 198 preset letti dal pedale");
+    else if (JSON.stringify(PRESET_NAMES) !== before) toast("Nomi dei preset aggiornati dal pedale");
   } finally {
     scanning = false; $("scanBtn").disabled = false; $("scanBar").style.width = "0";
     renderIndexInfo(); renderLibrary(); renderSetlist(); renderHeader();
+    if ($("pickDlg").open) renderPicker();
   }
 }
 
