@@ -834,10 +834,19 @@ function parsePreset(b) {
   $("readState").textContent = "Letto dal pedale";
   if (afterImport) {                    // dopo un import il preset resta "modificato" con il nome del file
     preset.name = afterImport.name; dirty = true; afterImport = null;
-  }
+  } else if (current) rememberName(current.bank, current.slot, name);
   if (keepHistory) { keepHistory = false; lastState = snap(preset); dirty = dirty || undoStack.length > 0; renderHistoryButtons(); }
   else resetHistory();
   renderPlay();
+}
+
+// Il nome letto dal pedale aggiorna la lista generale e resta salvato per le prossime aperture
+function rememberName(bank, slot, name) {
+  name = name.trim();
+  if (!name || PRESET_NAMES[bank][slot - 1] === name) return;
+  PRESET_NAMES[bank][slot - 1] = name;
+  store.set("matribox.names", { P: PRESET_NAMES.P, F: PRESET_NAMES.F });
+  renderSetlist(); renderLibrary();
 }
 
 function settingsHandle(d) {
@@ -1036,7 +1045,7 @@ function doSave() {
   if (!send(msg.name(idx, name))) return;
   setTimeout(() => {
     send(msg.save(idx));
-    PRESET_NAMES.P[idx] = name.slice(0, 11);
+    rememberName("P", current.slot, name.slice(0, 11));
     if (preset) preset.name = name.slice(0, 11);
     dirty = false;
     renderHeader(); renderSetlist(); renderLibrary();
