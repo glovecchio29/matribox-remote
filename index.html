@@ -332,6 +332,60 @@ body.staging { overflow: hidden; }
 .st-go.next small { font: 600 18px/1 var(--text); opacity: .75; }
 .st-go.next span { grid-row: 2; font: 700 clamp(28px, 4vw, 48px)/1.05 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .st-go.next i { grid-row: 1 / 3; grid-column: 2; font-style: normal; font-size: 72px; }
+/* ---------- Base del brano ---------- */
+.bs-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.bs-name { flex: 1; min-width: 200px; }
+.bs-name h2 { font-size: 34px; margin: 0; }
+.bs-name .hint { margin: 2px 0 0; }
+.bs-file { display: inline-flex; align-items: center; }
+.bs-empty { background: var(--panel); border-radius: var(--r-lg); padding: 22px; }
+.bs-empty p { margin: 0; max-width: 62ch; }
+.bs-wave { display: block; width: 100%; height: 130px; background: var(--panel); border-radius: var(--r-lg); touch-action: pan-y; cursor: pointer; }
+.bs-wave.selecting { outline: 2px solid var(--ok); }
+.bs-time { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; }
+.bs-time b { font: 700 28px/1 var(--display); font-variant-numeric: tabular-nums; }
+.bs-time .hint { margin: 0; flex: 1; min-width: 200px; }
+.bs-trans { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bs-play, .st-bplay { width: 84px; height: 64px; border-radius: var(--r-lg); background: var(--brass); color: var(--brass-ink); display: inline-grid; place-items: center; }
+.bs-play svg, .st-bplay svg { width: 30px; height: 30px; fill: currentColor; }
+.bs-play .i-pause, .st-bplay .i-pause, .bs-play.on .i-play, .st-bplay.on .i-play { display: none; }
+.bs-play.on .i-pause, .st-bplay.on .i-pause { display: inline; }
+.bs-play.on, .st-bplay.on { background: var(--ok); color: #062611; }
+.bs-mark { border: 2px solid var(--brass); color: var(--brass); background: transparent; height: 64px; font-size: 18px; }
+.bs-opts { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.bs-opts select.field { width: 96px; height: 44px; }
+.bs-h { margin-top: 26px; }
+.cue-row { --c: var(--brass); display: grid; grid-template-columns: 8px 96px auto 120px minmax(0, 1fr) 44px; gap: 8px; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.cue-row > i { width: 8px; height: 30px; border-radius: 4px; background: var(--c); }
+.cue-row.next { background: color-mix(in srgb, var(--brass) 8%, transparent); }
+.cue-t { font-variant-numeric: tabular-nums; font-weight: 700; }
+.cue-nudge { display: inline-flex; gap: 4px; }
+.cue-row select.field { height: 40px; font-size: 15px; }
+.cue-what .pk { width: 100%; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.bs-check { display: flex; gap: 10px; align-items: center; margin: 14px 0; }
+.bs-check input { width: 22px; height: 22px; }
+.song-base { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.song-base .bs-play { width: 64px; height: 52px; }
+.sb-mid { min-width: 0; }
+.sb-mid .meter { margin-top: 8px; height: 8px; }
+.sb-mid .meter div { background: var(--brass); transition: none; }
+.sb-line { display: flex; gap: 14px; align-items: baseline; white-space: nowrap; overflow: hidden; }
+.sb-line b { font: 700 20px/1 var(--display); font-variant-numeric: tabular-nums; }
+.sb-line span { color: var(--dust); overflow: hidden; text-overflow: ellipsis; }
+.sb-add { margin-top: 12px; }
+.song-acts .has-base { color: var(--brass); }
+.st-base { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.st-bplay { width: auto; min-width: 150px; height: 76px; gap: 10px; grid-auto-flow: column; padding: 0 22px; font: 700 26px/1 var(--display); }
+.st-base .sb-line b { font-size: 30px; }
+.st-base .sb-line span { font-size: 22px; }
+@media (max-width: 760px) {
+  .cue-row { grid-template-columns: 8px 90px 1fr 44px; }
+  .cue-row .cue-nudge { grid-column: 2 / -1; }
+  .cue-row .cue-type { grid-column: 2; }
+  .cue-row .cue-what { grid-column: 3 / -1; }
+  .bs-opts { margin-left: 0; }
+}
 @media (max-width: 760px) {
   .st-blocks { grid-template-columns: repeat(5, 1fr); }
   .st-led { height: 64px; }
@@ -501,6 +555,57 @@ body.staging { overflow: hidden; }
     </section>
   </div>
 
+  <!-- ===== Base del brano (si apre dalla scaletta) ===== -->
+  <div class="view" id="v-base">
+    <section class="block">
+      <div class="bs-head">
+        <button class="btn small" id="bsBack" aria-label="Torna alle scalette">‹ Scalette</button>
+        <div class="bs-name"><h2 id="bsTitle"></h2><p class="hint" id="bsInfo"></p></div>
+        <label class="btn small bs-file" id="bsFileLbl" for="bsFile">Carica base</label>
+        <input type="file" id="bsFile" accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg" hidden>
+      </div>
+      <div class="bs-empty" id="bsEmpty">
+        <p>Carica la base di questo brano: una canzone intera o una base senza chitarra. Poi la fai partire,
+          segni i punti in cui cambiare suono e da lì in poi il pedale cambia da solo mentre suoni.</p>
+        <p class="hint">Il file resta su questo tablet. Con il Matribox collegato la base esce dalle cuffie del pedale insieme alla chitarra.</p>
+      </div>
+      <div id="bsMain" hidden>
+        <canvas class="bs-wave" id="bsWave" aria-label="Forma d'onda della base: tocca per spostarti"></canvas>
+        <div class="bs-time"><b id="bsCur">0:00.0</b><span class="muted">/ <span id="bsDur">--:--</span></span>
+          <span class="hint" id="bsLoopInfo"></span>
+          <button class="btn small fs-toggle" id="bsLoop" aria-pressed="false" hidden><i></i>Ripeti</button>
+          <button class="btn small" id="bsClearLoop" hidden>Togli tratto</button>
+        </div>
+        <div class="bs-trans">
+          <button class="btn icon" id="bsStart" aria-label="Torna all'inizio"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5l-10 7 10 7z"/></svg></button>
+          <button class="btn icon" id="bsBack5" aria-label="Indietro di 5 secondi"><svg viewBox="0 0 24 24"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"/></svg></button>
+          <button class="bs-play" id="bsPlay" aria-label="Suona la base"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+          <button class="btn icon" id="bsFwd5" aria-label="Avanti di 5 secondi"><svg viewBox="0 0 24 24"><path d="M13 6l6 6-6 6M5 6l6 6-6 6"/></svg></button>
+          <button class="btn bs-mark" id="bsMark" title="Segna un cambio (M)">Segna qui</button>
+          <span class="bs-opts">
+            <label class="muted" for="bsRate">Velocità</label>
+            <select class="field" id="bsRate">
+              <option value="0.5">50%</option><option value="0.6">60%</option><option value="0.7">70%</option><option value="0.75">75%</option>
+              <option value="0.8">80%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option>
+            </select>
+            <button class="btn small fs-toggle" id="bsCount" aria-pressed="false"><i></i>Conteggio</button>
+          </span>
+        </div>
+        <h2 class="bs-h">Cambi durante il brano</h2>
+        <div id="bsCues"></div>
+        <details class="diag">
+          <summary>Impostazioni della base</summary>
+          <div class="prm"><label for="bsLead">Anticipo dei cambi</label><output id="bsLeadV">40 ms</output>
+            <input type="range" id="bsLead" min="0" max="200" step="5"></div>
+          <p class="hint">Il pedale impiega qualche istante a cambiare suono: l'app manda i comandi un po' prima del punto segnato.</p>
+          <label class="bs-check"><input type="checkbox" id="bsNextSong"> Alla fine della base prepara il brano successivo della scaletta</label>
+          <button class="btn small" id="bsRemove">Togli la base da questo brano</button>
+        </details>
+        <p class="hint">Tocca la forma d'onda per spostarti; trascina per ripetere un tratto (col dito tieni premuto un attimo). Tocca il tempo di un cambio per riascoltarlo da poco prima. Spazio: suona o metti in pausa; M: segna un cambio.</p>
+      </div>
+    </section>
+  </div>
+
   <!-- ===== Batteria ===== -->
   <div class="view" id="v-drum">
     <section class="block">
@@ -653,6 +758,10 @@ body.staging { overflow: hidden; }
     <p class="st-note" id="stNote"></p>
     <div class="st-parts" id="stParts"></div>
     <div class="st-preset"><b id="stSlot"></b> <span id="stName"></span> <em id="stDirty" hidden>modificato</em></div>
+  </div>
+  <div class="st-base" id="stBase" hidden>
+    <button class="st-bplay" id="stBasePlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span>Base</span></button>
+    <div class="sb-mid"><div class="sb-line"><b id="stBaseTime"></b><span id="stBaseNext"></span></div><div class="meter"><div id="stBaseBar"></div></div></div>
   </div>
   <div class="st-blocks" id="stBlocks"></div>
   <div class="st-nav">
@@ -2105,6 +2214,532 @@ function initFeatures() {
   }, true);
 }
 
+// ===================== Basi dei brani con cambi automatici =====================
+// Ogni brano della scaletta può avere una base (MP3, WAV…). Mentre la base suona l'app manda al pedale i cambi
+// segnati: preset diverso, oppure un blocco acceso o spento nel preset in corso.
+// Archivio, forma d'onda e selezione del tratto riprendono il lettore di GuitarApp.
+// Il file audio resta sul tablet (IndexedDB) e non viene inviato a nessun server.
+// Nel brano: song.base = { name, size, dur, cues: [{ id, t, type: "preset", key } | { id, t, type: "fx", mod, on }] }
+
+const BS = {
+  audio: null, songId: null, peaks: null, cues: [], lastT: 0, timer: 0, count: 0,
+  A: null, B: null, loop: false, fxApplied: false, loading: 0,
+};
+let bsLead = store.get("matribox.baseLead", 0.04);          // anticipo dei comandi, in secondi
+let bsCountOn = store.get("matribox.baseCount", false);
+let bsAutoNext = store.get("matribox.baseNext", true);
+
+// ---------- Archivio sul tablet ----------
+let bsDbP = null;
+function bsDB() {
+  if (bsDbP) return bsDbP;
+  bsDbP = new Promise((res, rej) => {
+    let r; try { r = indexedDB.open("matribox-basi", 1); } catch (e) { rej(e); return; }
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains("audio")) db.createObjectStore("audio");
+      if (!db.objectStoreNames.contains("peaks")) db.createObjectStore("peaks");
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  bsDbP.catch(() => { bsDbP = null; });
+  return bsDbP;
+}
+function bsReq(storeName, mode, fn) {
+  return bsDB().then(db => new Promise((res, rej) => {
+    const t = db.transaction(storeName, mode), rq = fn(t.objectStore(storeName));
+    t.oncomplete = () => res(rq ? rq.result : undefined);
+    t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  }));
+}
+
+// ---------- Brano attivo ----------
+const bsSong = () => { const l = activeList(); return l && l.songs[sets.song] || null; };
+const fmtB = (s, dec) => {
+  if (!Number.isFinite(s)) return "--:--";
+  s = Math.max(0, s);
+  const m = Math.floor(s / 60), r = s - m * 60;
+  return m + ":" + (dec ? r.toFixed(1).padStart(4, "0") : String(Math.floor(r)).padStart(2, "0"));
+};
+const partOfKey = key => { const [b, n] = [key[0], parseInt(key.slice(1), 10)]; return { bank: b, slot: n }; };
+const cueText = c => c.type === "preset"
+  ? `${c.key} ${presetName(c.key[0], parseInt(c.key.slice(1), 10))}`.trim()
+  : `${c.on ? "Accendi" : "Spegni"} ${c.mod}`;
+
+function bsAudio() {
+  if (BS.audio) return BS.audio;
+  const a = BS.audio = new Audio();
+  a.preload = "auto";
+  a.preservesPitch = a.mozPreservesPitch = a.webkitPreservesPitch = true;
+  a.addEventListener("play", () => { bsStartTimer(); bsRenderAll(); });
+  a.addEventListener("pause", () => { bsStopTimer(); bsRenderAll(); });
+  a.addEventListener("seeked", () => { BS.lastT = a.currentTime; if (!a.paused) bsApplyAt(a.currentTime); bsDraw(); bsRenderTime(); });
+  a.addEventListener("loadedmetadata", () => {
+    const song = bsSong();
+    if (song && song.base && Number.isFinite(a.duration) && !song.base.dur) { song.base.dur = Math.round(a.duration); saveSets(); }
+    bsRenderAll();
+  });
+  a.addEventListener("ended", bsEnded);
+  return a;
+}
+
+// carica la base del brano attivo (se è cambiato)
+async function bsSync() {
+  const song = bsSong(), id = song ? song.id : null;
+  if (id === BS.songId) return;
+  const a = bsAudio();
+  bsCancelCount(); a.pause();
+  if (a.src) { URL.revokeObjectURL(a.src); a.removeAttribute("src"); a.load(); }
+  Object.assign(BS, { songId: id, peaks: null, A: null, B: null, loop: false, lastT: 0, fxApplied: false });
+  const my = ++BS.loading;
+  bsRenderAll();
+  if (!song || !song.base) return;
+  try {
+    const [blob, peaks] = await Promise.all([bsReq("audio", "readonly", s => s.get(id)), bsReq("peaks", "readonly", s => s.get(id))]);
+    if (my !== BS.loading) return;
+    if (!blob) { log("Base non trovata sul tablet per " + song.title); bsRenderAll(); return; }
+    a.src = URL.createObjectURL(blob);
+    a.playbackRate = BS.rate || 1;
+    BS.peaks = peaks || null;
+    if (!peaks) bsMakePeaks(blob, id);
+  } catch (e) { log("Errore nella lettura della base: " + e.message); }
+  bsRenderAll();
+}
+
+// forma d'onda: un massimo ogni 1/2000 del brano (come GuitarApp), salvata con la base
+async function bsMakePeaks(blob, id) {
+  try {
+    const c = bsCtx(), buf = await c.decodeAudioData(await blob.arrayBuffer());
+    const chs = Array.from({ length: Math.min(2, buf.numberOfChannels) }, (_, k) => buf.getChannelData(k));
+    const n = 2000, len = chs[0].length, out = new Float32Array(n); let mx = 0;
+    for (let i = 0; i < n; i++) {
+      const a = Math.floor(i * len / n), b = Math.floor((i + 1) * len / n), stepN = Math.max(1, Math.floor((b - a) / 400));
+      let m = 0;
+      for (let j = a; j < b; j += stepN) for (const ch of chs) { const v = Math.abs(ch[j]); if (v > m) m = v; }
+      out[i] = m; if (m > mx) mx = m;
+    }
+    if (mx > 0) for (let i = 0; i < n; i++) out[i] /= mx;
+    bsReq("peaks", "readwrite", s => s.put(out, id)).catch(() => {});
+    if (BS.songId === id) { BS.peaks = out; bsDraw(); }
+  } catch (e) { log("Forma d'onda non disponibile: " + e.message); }
+}
+
+let bsActx = null;
+const bsCtx = () => bsActx || (bsActx = new (window.AudioContext || window.webkitAudioContext)());
+
+async function bsLoadFile(file) {
+  const song = bsSong();
+  if (!song || !file) return;
+  if (!/^audio\//.test(file.type) && !/\.(mp3|wav|m4a|aac|ogg|oga|flac|opus|webm)$/i.test(file.name)) { toast("Scegli un file audio, per esempio MP3 o WAV"); return; }
+  if (song.base && song.base.cues.length && !confirm(`Sostituire la base di "${song.title}"? I cambi segnati restano.`)) return;
+  try {
+    await bsReq("audio", "readwrite", s => s.put(file, song.id));
+    await bsReq("peaks", "readwrite", s => s.delete(song.id));
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  } catch (e) { toast("Spazio sul tablet insufficiente per questa base"); log("Errore nel salvataggio della base: " + e.message); return; }
+  song.base = { name: file.name.replace(/\.[^.]+$/, ""), size: file.size, dur: 0, cues: song.base ? song.base.cues : [] };
+  saveSets();
+  BS.songId = null;                                   // forza il caricamento
+  await bsSync();
+  toast("Base caricata: premi Play e segna i cambi");
+}
+
+async function bsRemove() {
+  const song = bsSong(); if (!song || !song.base) return;
+  if (!confirm(`Togliere la base di "${song.title}" con i suoi ${song.base.cues.length} cambi?`)) return;
+  try { await bsReq("audio", "readwrite", s => s.delete(song.id)); await bsReq("peaks", "readwrite", s => s.delete(song.id)); } catch (e) {}
+  delete song.base; saveSets();
+  BS.songId = null; await bsSync(); renderSets();
+  toast("Base tolta");
+}
+
+// basi di brani eliminati: si liberano dal tablet
+async function bsCleanup() {
+  try {
+    const keys = await bsReq("audio", "readonly", s => s.getAllKeys());
+    const alive = new Set(sets.lists.flatMap(l => l.songs.filter(s => s.base).map(s => s.id)));
+    for (const k of keys || []) if (!alive.has(k)) {
+      await bsReq("audio", "readwrite", s => s.delete(k)); await bsReq("peaks", "readwrite", s => s.delete(k));
+    }
+  } catch (e) {}
+}
+
+// ---------- Riproduzione ----------
+function bsPlay() {
+  const a = bsAudio(), song = bsSong();
+  if (!song || !song.base || !a.src) { toast("Questo brano non ha una base"); return; }
+  if (BS.count) { bsCancelCount(); return; }
+  if (!a.paused) { a.pause(); return; }
+  if (!midiOut) toast("Pedale non collegato: la base suona ma i cambi non arrivano");
+  if (dirty) { dirty = false; $("dirty").classList.remove("on"); }   // durante la base comandano i cambi segnati
+  if (BS.loop && BS.A != null && (a.currentTime < BS.A || a.currentTime >= BS.B)) a.currentTime = BS.A;
+  bsApplyAt(a.currentTime);
+  if (bsCountOn) bsCountIn(() => a.play().catch(e => toast("Riproduzione non riuscita: " + e.message)));
+  else a.play().catch(e => toast("Riproduzione non riuscita: " + e.message));
+}
+function bsPause() { bsCancelCount(); if (BS.audio) BS.audio.pause(); }
+function bsSeek(t) {
+  const a = bsAudio(); if (!a.src || !Number.isFinite(a.duration)) return;
+  a.currentTime = Math.max(0, Math.min(a.duration - 0.05, t));
+  if (a.paused) { BS.lastT = a.currentTime; bsDraw(); bsRenderTime(); }
+}
+
+// conteggio di 4 battiti al tempo del brano
+function bsCountIn(go) {
+  const c = bsCtx(), song = bsSong();
+  const bpm = (song && song.bpm) || (preset && preset.bpm) || 120, beat = 60 / (bpm * (BS.rate || 1));
+  BS.count = -1;                                     // conteggio in preparazione: un secondo tocco lo annulla
+  bsRenderAll();
+  c.resume().then(() => {
+    if (BS.count !== -1) return;
+    const t0 = c.currentTime + 0.06;
+    for (let i = 0; i < 4; i++) {
+      const o = c.createOscillator(), g = c.createGain(), t = t0 + i * beat;
+      o.frequency.value = i === 0 ? 1600 : 1100;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.08);
+    }
+    BS.count = setTimeout(() => { BS.count = 0; go(); bsRenderAll(); }, (0.06 + 4 * beat) * 1000);
+    bsRenderAll();
+  });
+}
+function bsCancelCount() { if (BS.count) { if (BS.count > 0) clearTimeout(BS.count); BS.count = 0; bsRenderAll(); } }
+
+// ogni 15 ms: comandi da mandare, ripetizione del tratto, disegno
+function bsStartTimer() {
+  bsStopTimer();
+  BS.lastT = BS.audio.currentTime;
+  BS.timer = setInterval(bsTick, 15);
+}
+function bsStopTimer() { clearInterval(BS.timer); BS.timer = 0; }
+let bsDrawAt = 0;
+function bsTick() {
+  const a = BS.audio, song = bsSong(); if (!a || a.paused) return;
+  if (BS.loop && BS.A != null && a.currentTime >= BS.B) { a.currentTime = BS.A; return; }   // "seeked" rimette lo stato
+  const t = a.currentTime + bsLead * a.playbackRate;
+  if (song && song.base) for (const c of song.base.cues) if (c.t > BS.lastT && c.t <= t) bsFire(c);
+  BS.lastT = t;
+  const now = performance.now();
+  if (now - bsDrawAt > 60) { bsDrawAt = now; bsDraw(); bsRenderTime(); }
+}
+
+function bsFire(c) {
+  if (c.type === "preset") bsPreset(c.key);
+  else bsFx(c.mod, c.on);
+}
+function bsPreset(key) {
+  const { bank, slot } = partOfKey(key);
+  if (!send(msg.preset(bank, slot))) return;
+  BS.fxApplied = false;
+  const song = bsSong();
+  if (song) {                                        // la parte della scaletta segue la base
+    const i = song.parts.findIndex((p, k) => p.key === key && k >= sets.part), j = i >= 0 ? i : song.parts.findIndex(p => p.key === key);
+    if (j >= 0) { sets.part = j; saveSets(); }
+  }
+  dirty = false;
+  setCurrent(bank, slot);
+  renderStage();
+}
+function bsFx(mod, on) {
+  const id = MODULES.indexOf(mod) + 1; if (!id) return;
+  if (!send(msg.onOff(id, on))) return;
+  BS.fxApplied = true;
+  if (preset) { const m = preset.mods.find(x => x.name === mod); if (m) { m.on = on; renderChain(); if (m.name === selected) renderDetail(); } }
+  renderStage();
+}
+
+// stato giusto per un punto qualsiasi della base: ultimo preset segnato prima di t (o la prima parte del brano)
+// e poi i blocchi accesi o spenti dopo quel preset
+function bsApplyAt(t) {
+  const song = bsSong(); if (!song || !song.base || !midiOut) return;
+  const tt = t + bsLead;
+  const cues = song.base.cues.filter(c => c.t <= tt);
+  let pi = -1; cues.forEach((c, i) => { if (c.type === "preset") pi = i; });
+  const key = pi >= 0 ? cues[pi].key : (song.parts[0] && song.parts[0].key);
+  const fx = {}; cues.slice(pi + 1).forEach(c => { if (c.type === "fx") fx[c.mod] = c.on; });
+  const reload = key && (keyOf() !== key || BS.fxApplied);   // blocchi cambiati prima: si ricarica il preset salvato
+  if (reload) bsPreset(key);
+  const names = Object.keys(fx);
+  if (names.length) setTimeout(() => names.forEach(n => bsFx(n, fx[n])), reload ? 120 : 0);
+  BS.lastT = tt;
+}
+
+function bsEnded() {
+  bsStopTimer(); bsRenderAll();
+  if (!bsAutoNext) return;
+  const l = activeList();
+  if (l && sets.song < l.songs.length - 1) { goTo(sets.song + 1, 0); toast("Base finita: pronto il brano successivo"); }
+  else toast("Base finita");
+}
+
+// ---------- Punti di cambio ----------
+function bsSortCues(song) { song.base.cues.sort((a, b) => a.t - b.t); }
+function bsMark() {
+  const song = bsSong(), a = bsAudio();
+  if (!song || !song.base || !a.src) return;
+  const t = Math.round(a.currentTime * 10) / 10;
+  const before = song.base.cues.filter(c => c.type === "preset" && c.t <= t);
+  const lastKey = before.length ? before[before.length - 1].key : null;
+  // proposta: la parte del brano che viene dopo l'ultimo preset segnato
+  let key = song.parts[0] ? song.parts[0].key : keyOf() || "P01";
+  if (lastKey) {
+    const i = song.parts.findIndex(p => p.key === lastKey);
+    key = i >= 0 ? song.parts[(i + 1) % song.parts.length].key : (song.parts[0] ? song.parts[0].key : lastKey);
+  } else if (t > 1 && song.parts[1]) key = song.parts[1].key;
+  const c = { id: uid(), t, type: "preset", key };
+  song.base.cues.push(c); bsSortCues(song); saveSets();
+  BS.lastT = Math.max(BS.lastT, t + bsLead);          // non scattare subito sul punto appena segnato
+  bsRenderCues(c.id); bsDraw();
+  toast(`Cambio segnato a ${fmtB(t, true)}: ${cueText(c)}`);
+}
+
+function bsRenderCues(focusId) {
+  const wrap = $("bsCues"); if (!wrap) return;
+  const song = bsSong(); wrap.innerHTML = "";
+  if (!song || !song.base) return;
+  const cues = song.base.cues;
+  if (!cues.length) {
+    wrap.innerHTML = '<p class="hint">Nessun cambio segnato. Fai partire la base e tocca "Segna qui" nel punto in cui vuoi cambiare suono. All\'inizio il pedale va sulla prima parte del brano.</p>';
+    return;
+  }
+  const a = bsAudio(), now = a.currentTime + bsLead;
+  const nextId = (cues.find(c => c.t > now) || {}).id;
+  cues.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "cue-row" + (c.id === nextId ? " next" : "");
+    row.style.setProperty("--c", c.type === "preset" ? "var(--brass)" : `var(--c-${c.mod})`);
+    row.innerHTML = `<i></i>
+      <button class="btn small cue-t" aria-label="Ascolta da poco prima"></button>
+      <span class="cue-nudge"><button class="btn small icon" aria-label="Un decimo di secondo prima">−</button><button class="btn small icon" aria-label="Un decimo di secondo dopo">+</button><button class="btn small" aria-label="Sposta al punto attuale">Qui</button></span>
+      <select class="field cue-type" aria-label="Tipo di cambio"><option value="preset">Preset</option><option value="on">Accendi</option><option value="off">Spegni</option></select>
+      <span class="cue-what"></span>
+      <button class="btn small icon" aria-label="Elimina il cambio">✕</button>`;
+    const [tBtn, minus, plus, here] = row.querySelectorAll("button");
+    const del = row.querySelector(".btn.icon:last-child");
+    const typ = row.querySelector(".cue-type"), what = row.querySelector(".cue-what");
+    tBtn.textContent = fmtB(c.t, true);
+    tBtn.onclick = () => { bsSeek(c.t - 2); if (a.paused) bsPlay(); };
+    const move = t => { c.t = Math.max(0, Math.round(t * 10) / 10); bsSortCues(song); saveSets(); bsRenderCues(c.id); bsDraw(); };
+    minus.onclick = () => move(c.t - 0.1);
+    plus.onclick = () => move(c.t + 0.1);
+    here.onclick = () => move(a.currentTime);
+    typ.value = c.type === "preset" ? "preset" : (c.on ? "on" : "off");
+    typ.onchange = () => {
+      if (typ.value === "preset") { c.type = "preset"; c.key = c.key || keyOf() || "P01"; delete c.mod; delete c.on; }
+      else { c.type = "fx"; c.mod = c.mod || "DLY"; c.on = typ.value === "on"; }
+      saveSets(); bsRenderCues(c.id); bsDraw();
+    };
+    if (c.type === "preset") {
+      const b = document.createElement("button"); b.type = "button"; b.className = "btn small pk";
+      b.textContent = cueText(c);
+      b.onclick = () => { pickCallback = (bank, slot) => { c.key = label(bank, slot); saveSets(); bsRenderCues(c.id); }; openPicker(); };
+      what.appendChild(b);
+    } else {
+      const s = document.createElement("select"); s.className = "field"; s.setAttribute("aria-label", "Blocco");
+      MODULES.forEach(m => s.append(new Option(m + (preset ? " " + (algName(m, (preset.mods.find(x => x.name === m) || {}).code) || "") : ""), m, false, m === c.mod)));
+      s.onchange = () => { c.mod = s.value; saveSets(); bsRenderCues(c.id); bsDraw(); };
+      what.appendChild(s);
+    }
+    del.onclick = () => { song.base.cues = cues.filter(x => x !== c); saveSets(); bsRenderCues(); bsDraw(); };
+    wrap.appendChild(row);
+    if (c.id === focusId) requestAnimationFrame(() => row.scrollIntoView({ block: "nearest" }));
+  });
+}
+
+// ---------- Forma d'onda ----------
+function bsDraw() {
+  const cv = $("bsWave"); if (!cv || !cv.offsetWidth) return;
+  const dpr = window.devicePixelRatio || 1, w = cv.offsetWidth, h = cv.offsetHeight || 120;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const cs = getComputedStyle(document.documentElement), col = n => cs.getPropertyValue(n).trim();
+  const a = BS.audio, song = bsSong();
+  const dur = a && Number.isFinite(a.duration) ? a.duration : 0, t = a ? a.currentTime : 0, xOf = s => dur ? s / dur * w : 0;
+  const hasAB = BS.A != null && BS.B != null;
+  if (hasAB) { g.fillStyle = "rgba(87,194,122,.14)"; g.fillRect(xOf(BS.A), 0, Math.max(2, xOf(BS.B) - xOf(BS.A)), h); }
+  const n = Math.max(1, Math.floor(w / 3)), mid = h / 2 + 6;
+  for (let i = 0; i < n; i++) {
+    const x = i * 3; let v = 0.04;
+    if (BS.peaks) { const p0 = Math.floor(i / n * BS.peaks.length), p1 = Math.max(p0 + 1, Math.floor((i + 1) / n * BS.peaks.length)); for (let j = p0; j < p1; j++) v = Math.max(v, BS.peaks[j]); }
+    const played = dur && x <= xOf(t);
+    g.fillStyle = played ? col("--brass") : "#5d574c";
+    const bh = Math.max(2, v * (h - 30)); g.fillRect(x, mid - bh / 2, 2, bh);
+  }
+  if (hasAB) { g.fillStyle = col("--ok"); [BS.A, BS.B].forEach(s => g.fillRect(xOf(s) - 1, 0, 2, h)); }
+  if (dur && song && song.base) for (const c of song.base.cues) {          // segnaposto dei cambi
+    const x = xOf(c.t), cc = c.type === "preset" ? col("--brass") : col("--c-" + c.mod);
+    g.fillStyle = cc; g.fillRect(x - 1, 10, 2, h - 10);
+    g.beginPath(); g.moveTo(x - 6, 0); g.lineTo(x + 6, 0); g.lineTo(x, 10); g.closePath(); g.fill();
+    if (c.type === "fx" && !c.on) { g.fillStyle = col("--tolex"); g.fillRect(x - 3, 1, 6, 3); }
+  }
+  if (dur) { g.fillStyle = col("--cream"); g.fillRect(xOf(t) - 1, 0, 2, h); }
+}
+
+// tocco per spostarsi; trascinando (col dito dopo una pressione lunga) si sceglie il tratto da ripetere
+function bsWaveInit() {
+  const cv = $("bsWave"); let drag = null, holdT = 0;
+  const tAt = e => { const r = cv.getBoundingClientRect(), d = BS.audio && BS.audio.duration || 0; return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * d; };
+  const clear = () => { clearTimeout(holdT); cv.classList.remove("selecting"); drag = null; };
+  cv.addEventListener("pointerdown", e => {
+    if (!BS.audio || !BS.audio.duration) return;
+    const touch = e.pointerType !== "mouse";
+    drag = { x: e.clientX, y: e.clientY, t: tAt(e), moved: false, select: !touch, touch, prev: { A: BS.A, B: BS.B, loop: BS.loop } };
+    if (touch) holdT = setTimeout(() => { if (!drag) return; drag.select = true; cv.classList.add("selecting"); try { navigator.vibrate && navigator.vibrate(12); } catch (err) {} }, 420);
+    else { try { cv.setPointerCapture(e.pointerId); } catch (err) {} }
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = Math.abs(e.clientX - drag.x), dy = Math.abs(e.clientY - drag.y);
+    if (!drag.select) { if (dx > 8 || dy > 8) { clearTimeout(holdT); drag.cancel = true; } return; }
+    if (drag.touch) { try { if (!cv.hasPointerCapture(e.pointerId)) cv.setPointerCapture(e.pointerId); } catch (err) {} }
+    if (dx > 6) drag.moved = true;
+    if (drag.moved) { const t = tAt(e); BS.A = Math.min(drag.t, t); BS.B = Math.max(drag.t, t); bsDraw(); bsRenderLoop(); }
+  });
+  cv.addEventListener("pointerup", e => {
+    if (!drag) return;
+    if (drag.select && drag.moved && BS.B - BS.A > 0.5) { BS.loop = true; bsSeek(BS.A); }
+    else if (drag.select && drag.moved) Object.assign(BS, drag.prev);
+    else if (!drag.cancel) bsSeek(tAt(e));
+    clear(); bsDraw(); bsRenderLoop();
+  });
+  cv.addEventListener("pointercancel", () => { if (drag && drag.select && drag.moved) Object.assign(BS, drag.prev); clear(); bsDraw(); bsRenderLoop(); });
+  cv.addEventListener("contextmenu", e => e.preventDefault());
+  window.addEventListener("resize", bsDraw);
+}
+
+// ---------- Interfaccia ----------
+function bsRenderTime() {
+  const a = BS.audio, cur = a ? a.currentTime : 0, dur = a && a.duration;
+  if ($("bsCur")) { $("bsCur").textContent = fmtB(cur, true); $("bsDur").textContent = fmtB(dur); }
+  // prossimo cambio, in Suona e sul palco
+  const song = bsSong(), nx = song && song.base && song.base.cues.find(c => c.t > cur + bsLead);
+  const txt = nx ? `Tra ${fmtB(Math.ceil(nx.t - cur - bsLead))}: ${cueText(nx)}` : (song && song.base ? "Nessun altro cambio" : "");
+  for (const id of ["sbNext", "stBaseNext"]) if ($(id)) $(id).textContent = txt;
+  for (const id of ["sbTime", "stBaseTime"]) if ($(id)) $(id).textContent = `${fmtB(cur)} / ${fmtB(dur)}`;
+  for (const id of ["sbBar", "stBaseBar"]) if ($(id)) $(id).style.width = (dur ? cur / dur * 100 : 0) + "%";
+  bsMarkNextRow(nx ? nx.id : null);
+}
+let bsNextShown = null;
+function bsMarkNextRow(id) {
+  if (bsNextShown === id) return; bsNextShown = id;
+  const song = bsSong(); if (!song || !song.base || !$("bsCues")) return;
+  const rows = $("bsCues").querySelectorAll(".cue-row");
+  song.base.cues.forEach((c, i) => rows[i] && rows[i].classList.toggle("next", c.id === id));
+}
+function bsRenderLoop() {
+  const has = BS.A != null && BS.B != null;
+  $("bsLoopInfo").textContent = has ? `Tratto ripetuto: ${fmtB(BS.A, true)} – ${fmtB(BS.B, true)}` : "Per ripetere un tratto trascina sulla forma d'onda (col dito tieni premuto un attimo).";
+  $("bsLoop").hidden = !has; $("bsLoop").setAttribute("aria-pressed", String(BS.loop));
+  $("bsClearLoop").hidden = !has;
+}
+function bsRenderAll() {
+  const song = bsSong(), a = BS.audio, has = !!(song && song.base), ready = has && a && a.src;
+  const playing = a && !a.paused, label_ = BS.count ? "Conteggio…" : playing ? "Pausa" : "Suona la base";
+  // vista Base
+  if ($("bsTitle")) {
+    $("bsTitle").textContent = song ? song.title : "Nessun brano";
+    $("bsInfo").textContent = !song ? "Scegli un brano nella scaletta." : has
+      ? `${song.base.name}${a && a.duration ? ", " + fmtB(a.duration) : ""} · ${song.base.cues.length} cambi${ready ? "" : " · base non trovata sul tablet: ricaricala"}`
+      : "Carica la base del brano: MP3, WAV o un altro file audio.";
+    $("bsEmpty").hidden = has; $("bsMain").hidden = !has;
+    $("bsFileLbl").textContent = has ? "Cambia base" : "Carica base";
+    $("bsFileLbl").classList.toggle("primary", !has);
+    $("bsFileLbl").hidden = !song;
+    $("bsPlay").setAttribute("aria-label", label_); $("bsPlay").classList.toggle("on", !!(playing || BS.count));
+    $("bsRate").value = String(BS.rate || 1);
+    $("bsCount").setAttribute("aria-pressed", String(bsCountOn));
+    $("bsNextSong").checked = bsAutoNext;
+    $("bsLead").value = Math.round(bsLead * 1000); $("bsLeadV").textContent = Math.round(bsLead * 1000) + " ms";
+    bsRenderLoop(); bsRenderCues(); bsDraw();
+  }
+  // riga nel pannello Brano di Suona
+  const sb = $("songBase");
+  if (sb) {
+    sb.hidden = !has;
+    $("sbPlay").setAttribute("aria-label", label_); $("sbPlay").classList.toggle("on", !!(playing || BS.count));
+  }
+  // palco
+  if ($("stBase")) {
+    $("stBase").hidden = !has;
+    $("stBasePlay").classList.toggle("on", !!(playing || BS.count));
+    $("stBasePlay").querySelector("span").textContent = BS.count ? "Conteggio" : playing ? "Pausa" : "Base";
+  }
+  bsNextShown = null; bsRenderTime();
+}
+
+function openBase(i) {
+  if (i != null && i !== sets.song) goTo(i, 0);
+  showView("v-base");
+  bsSync().then(bsRenderAll);
+  requestAnimationFrame(bsDraw);
+}
+
+// la base segue il brano attivo della scaletta
+const _renderSetlistB = renderSetlist;
+renderSetlist = function () {
+  _renderSetlistB();
+  const box = $("songBox"), song = bsSong();
+  if (box && song) {
+    const row = document.createElement("div"); row.className = "song-base"; row.id = "songBase";
+    row.innerHTML = `<button class="bs-play" id="sbPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+      <div class="sb-mid"><div class="sb-line"><b id="sbTime"></b><span id="sbNext"></span></div><div class="meter"><div id="sbBar"></div></div></div>
+      <button class="btn small" id="sbOpen">Cambi</button>`;
+    box.appendChild(row);
+    $("sbPlay").onclick = bsPlay;
+    $("sbOpen").onclick = () => openBase();
+    const add = document.createElement("button"); add.className = "btn small sb-add"; add.id = "sbAdd"; add.textContent = "Aggiungi una base con i cambi automatici";
+    add.onclick = () => openBase(); add.hidden = !!song.base;
+    box.appendChild(add);
+  }
+  bsSync(); bsRenderAll();
+};
+
+// nella lista dei brani: pulsante Base
+const _renderSetsB = renderSets;
+renderSets = function () {
+  _renderSetsB();
+  const l = activeList(); if (!l) return;
+  $("songList").querySelectorAll(".song-row").forEach((row, i) => {
+    const song = l.songs[i]; if (!song) return;
+    const b = document.createElement("button"); b.className = "btn small" + (song.base ? " has-base" : "");
+    b.textContent = song.base ? `Base · ${song.base.cues.length}` : "Base";
+    b.setAttribute("aria-label", song.base ? `Base e cambi di ${song.title}` : `Aggiungi una base a ${song.title}`);
+    b.onclick = () => openBase(i);
+    const acts = row.querySelector(".song-acts"); acts.insertBefore(b, acts.lastElementChild);
+  });
+};
+
+const _renderStageB = renderStage;
+renderStage = function () { _renderStageB(); if (!$("stage").hidden) bsRenderAll(); };
+
+function initBase() {
+  bsAudio(); bsWaveInit();
+  $("bsBack").onclick = () => showView("v-sets");
+  $("bsFile").onchange = e => { const f = e.target.files[0]; e.target.value = ""; bsLoadFile(f); };
+  $("bsPlay").onclick = bsPlay;
+  $("bsBack5").onclick = () => bsSeek(bsAudio().currentTime - 5);
+  $("bsFwd5").onclick = () => bsSeek(bsAudio().currentTime + 5);
+  $("bsStart").onclick = () => bsSeek(BS.loop && BS.A != null ? BS.A : 0);
+  $("bsMark").onclick = bsMark;
+  $("bsRate").onchange = () => { BS.rate = parseFloat($("bsRate").value) || 1; bsAudio().playbackRate = BS.rate; };
+  $("bsCount").onclick = () => { bsCountOn = !bsCountOn; store.set("matribox.baseCount", bsCountOn); bsRenderAll(); };
+  $("bsLoop").onclick = () => { BS.loop = !BS.loop; bsRenderLoop(); };
+  $("bsClearLoop").onclick = () => { BS.A = BS.B = null; BS.loop = false; bsRenderLoop(); bsDraw(); };
+  $("bsNextSong").onchange = () => { bsAutoNext = $("bsNextSong").checked; store.set("matribox.baseNext", bsAutoNext); };
+  $("bsLead").oninput = () => { bsLead = parseInt($("bsLead").value, 10) / 1000; store.set("matribox.baseLead", bsLead); $("bsLeadV").textContent = Math.round(bsLead * 1000) + " ms"; };
+  $("bsRemove").onclick = bsRemove;
+  $("stBasePlay").onclick = bsPlay;
+  document.addEventListener("keydown", e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || typing(e) || document.querySelector("dialog[open]")) return;
+    const inBase = $("v-base").classList.contains("active") && $("stage").hidden;
+    const k = e.key.toLowerCase();
+    if (inBase && k === " " && !/BUTTON/.test(e.target.tagName)) { e.preventDefault(); e.stopImmediatePropagation(); bsPlay(); }
+    else if (inBase && k === "m") { e.preventDefault(); bsMark(); }
+  }, true);
+  bsCleanup();
+}
+
 // ---------- Avvio ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
 $("connectBtn").onclick = connect; $("connectBig").onclick = connect;
@@ -2128,7 +2763,7 @@ $("rcRefresh").onclick = () => listInputs().catch(e => { $("rcSrc").textContent 
 $("tuBtn").onclick = () => (tuner ? stopTuner() : startTuner());
 window.addEventListener("beforeunload", e => { if (dirty || takes.length) { e.preventDefault(); e.returnValue = ""; } });
 
-initDrum(); initFeatures(); renderLibrary(); renderSetlist(); renderTakes();
+initDrum(); initFeatures(); initBase();renderLibrary(); renderSetlist(); renderTakes();
 showView(store.get("matribox.view", "v-play"));
 // App installabile e offline (solo su https o localhost)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
