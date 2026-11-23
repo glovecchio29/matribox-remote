@@ -227,7 +227,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* ---------- Barra di navigazione ---------- */
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
-  display: grid; grid-template-columns: repeat(6, 1fr); background: #15130F; border-top: 1px solid #ffffff0d; z-index: 5; }
+  display: grid; grid-template-columns: repeat(7, 1fr); background: #15130F; border-top: 1px solid #ffffff0d; z-index: 5; }
 .tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--dust); font-size: 14px; font-weight: 600; }
 .tabs svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .tabs button[aria-current="page"] { color: var(--brass); }
@@ -264,6 +264,31 @@ body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { op
 .song-note { margin: 8px 0 0; color: var(--brass); }
 .song-off { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: var(--r-sm); color: var(--dust); }
 .song-off span { flex: 1 1 220px; }
+
+/* ---------- Esercizio ---------- */
+.ex-prog { display: grid; gap: 8px; }
+.ex-prog input.field { height: var(--tap); border-radius: var(--r-md); background: var(--panel-2); border: 1px solid var(--rule); color: var(--cream);
+  padding: 0 14px; font: 600 20px/1 var(--display); width: 100%; }
+.ex-prog-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ex-chords { margin-top: 14px; flex-wrap: wrap; }
+.ex-chip { min-width: 96px; }
+.ex-chip.bad { outline: 1px dashed var(--danger); opacity: .7; }
+.ex-now { margin: 18px 0; padding: 16px 18px; background: var(--panel); border-radius: var(--r-lg); }
+.ex-now-main { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.ex-now-main b { font: 700 56px/1 var(--display); }
+.ex-mode { margin: 8px 0 4px; font: 600 22px/1.2 var(--display); color: var(--brass); }
+.ex-check { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--dust); }
+.ex-check input { width: 22px; height: 22px; accent-color: var(--brass); }
+.ex-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; margin-top: 22px; }
+.ex-fields .btn { grid-column: 1 / -1; }
+.ex-mix { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 14px 18px; margin: 22px 0 8px; }
+@media (max-width: 430px) {
+  .tabs button { font-size: 10.5px; letter-spacing: -.01em; }
+}
+@media (max-width: 760px) {
+  .ex-fields { grid-template-columns: 1fr 1fr; }
+  .ex-now-main b { font-size: 44px; }
+}
 .parts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .chip { flex: 0 0 auto; min-width: 150px; height: 64px; padding: 0 16px; border-radius: var(--r-md); background: var(--panel-2);
   text-align: left; display: flex; flex-direction: column; justify-content: center; }
@@ -649,6 +674,63 @@ body.staging { overflow: hidden; }
     </section>
   </div>
 
+  <!-- ===== Esercizio: base generata dagli accordi ===== -->
+  <div class="view" id="v-ex">
+    <section class="block">
+      <h2>Esercizio</h2>
+      <div class="ex-prog">
+        <label class="muted" for="exProg">Accordi</label>
+        <input class="field" id="exProg" type="text" autocomplete="off" spellcheck="false" placeholder="es. Lam Fa Do Sol  oppure  Am F C G">
+        <div class="ex-prog-opts">
+          <select class="field" id="exPreset" aria-label="Progressioni pronte"></select>
+          <select class="field" id="exKeySel" aria-label="Tonalità"></select>
+        </div>
+      </div>
+      <div class="parts ex-chords" id="exChords"></div>
+
+      <div class="ex-now" aria-live="polite">
+        <div class="ex-now-main"><b id="exNowChord">--</b><span id="exNext" class="muted"></span></div>
+        <p class="ex-mode" id="exNowMode"></p>
+        <p class="hint" id="exNowWhy"></p>
+        <p class="hint" id="exKey"></p>
+      </div>
+
+      <div class="drum ex-top">
+        <div>
+          <button class="big-play" id="exPlay" aria-pressed="false">▶ Avvia</button>
+          <label class="ex-check"><input type="checkbox" id="exCount"> Conteggio iniziale (4 colpi)</label>
+        </div>
+        <div class="tempo">
+          <div class="tempo-read"><b id="exBpmV">90</b><span class="muted">bpm</span></div>
+          <div class="tempo-btns">
+            <button class="btn" id="exMinus" aria-label="Rallenta di 1 bpm">−</button>
+            <button class="btn" id="exPlus" aria-label="Accelera di 1 bpm">+</button>
+            <button class="btn primary" id="exTap">Tap</button>
+          </div>
+          <input type="range" id="exBpm" min="40" max="240" step="1" value="90" aria-label="Tempo dell'esercizio">
+        </div>
+      </div>
+
+      <div class="ex-fields">
+        <div class="prm"><label for="exStyle">Stile</label><span></span><select class="field" id="exStyle"></select></div>
+        <div class="prm"><label for="exBass">Basso</label><span></span><select class="field" id="exBass"></select></div>
+        <div class="prm"><label for="exComp">Pianoforte</label><span></span><select class="field" id="exComp"></select></div>
+        <div class="prm"><label for="exBeats">Battiti per accordo</label><span></span><select class="field" id="exBeats"></select></div>
+        <div class="prm"><label for="exMel">Melodia</label><span></span><select class="field" id="exMel"></select></div>
+        <div class="prm"><label>Linea melodica</label><span></span><button class="btn" id="exNewMel">Nuova melodia</button></div>
+      </div>
+      <div class="ex-mix" id="exMix"></div>
+      <p class="hint" id="exSnd"></p>
+      <p class="hint">Il suono esce dal tablet: con il Matribox collegato lo senti nelle sue cuffie insieme alla chitarra. Tempo, stile e volumi si cambiano anche mentre suona; tocca un accordo per ripartire da lì.</p>
+      <details class="diag">
+        <summary>Crediti dei suoni</summary>
+        <p class="hint">Batteria: Virtuosity Drums di Versilian Studios e Karoryfer Samples (CC0).
+          Basso: Black and Blue Basses di Karoryfer Samples (CC0).
+          Pianoforte: Salamander Grand Piano di Alexander Holm, licenza <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>; i campioni sono stati accorciati e convertiti.</p>
+      </details>
+    </section>
+  </div>
+
   <!-- ===== Registra ===== -->
   <div class="view" id="v-rec">
     <section class="block">
@@ -698,6 +780,8 @@ body.staging { overflow: hidden; }
     <svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg>Libreria</button>
   <button data-view="v-drum">
     <svg viewBox="0 0 24 24"><ellipse cx="12" cy="9" rx="8" ry="3"/><path d="M4 9v7c0 1.7 3.6 3 8 3s8-1.3 8-3V9"/></svg>Batteria</button>
+  <button data-view="v-ex">
+    <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 7l5 2v10"/><path d="M9 9l5-3v13"/><path d="M14 6l6 2v11"/></svg>Esercizio</button>
   <button data-view="v-rec">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Registra</button>
   <button data-view="v-tune">
@@ -2793,6 +2877,647 @@ function initBase() {
   bsCleanup();
 }
 
+// ---------- Esercizio: base generata dagli accordi ----------
+// Motore preso da GuitarApp (teoria, stili, linee di basso, accompagnamento, melodia),
+// con suoni campionati veri al posto di quelli sintetizzati:
+//   batteria  Virtuosity Drums (Versilian Studios, Karoryfer Samples), CC0
+//   basso     Black and Blue Basses (Karoryfer Samples), CC0
+//   piano     Salamander Grand Piano (Alexander Holm), CC BY 3.0
+// L'audio esce dal tablet, quindi con il Matribox collegato si sente nelle sue cuffie insieme alla chitarra.
+const Esercizio = (() => {
+  // ===== Teoria (da GuitarApp) =====
+  const LETTERS = ["C","D","E","F","G","A","B"];
+  const LETTER_PC = [0,2,4,5,7,9,11];
+  const IT = { C:"Do", D:"Re", E:"Mi", F:"Fa", G:"Sol", A:"La", B:"Si" };
+  const MAJ = [0,2,4,5,7,9,11];
+  const ROOTS = [["C",0],["C",1],["D",0],["E",-1],["E",0],["F",0],["F",1],["G",0],["A",-1],["A",0],["B",-1],["B",0]];
+  const SCALES = [
+    { id:"major", name:"Maggiore (ionica)", deg:["1","2","3","4","5","6","7"] },
+    { id:"minor", name:"Minore naturale (eolia)", deg:["1","2","b3","4","5","b6","b7"] },
+    { id:"harm", name:"Minore armonica", deg:["1","2","b3","4","5","b6","7"] },
+    { id:"mel", name:"Minore melodica", deg:["1","2","b3","4","5","6","7"] },
+    { id:"dorian", name:"Dorica", deg:["1","2","b3","4","5","6","b7"] },
+    { id:"phryg", name:"Frigia", deg:["1","b2","b3","4","5","b6","b7"] },
+    { id:"lydian", name:"Lidia", deg:["1","2","3","#4","5","6","7"] },
+    { id:"mixo", name:"Misolidia", deg:["1","2","3","4","5","6","b7"] },
+    { id:"locrian", name:"Locria", deg:["1","b2","b3","4","b5","b6","b7"] },
+    { id:"phrdom", name:"Frigia dominante", deg:["1","b2","3","4","5","b6","b7"] },
+    { id:"whole", name:"Esatonale", deg:["1","2","3","#4","#5","b7"] },
+    { id:"dimwh", name:"Diminuita (tono-semitono)", deg:["1","2","b3","4","b5","#5","6","7"] },
+  ];
+  const QUAL = {
+    maj:  { iv:[0,4,7],    show:"",     rn:"" },
+    min:  { iv:[0,3,7],    show:"m",    rn:"" },
+    dom7: { iv:[0,4,7,10], show:"7",    rn:"7" },
+    maj7: { iv:[0,4,7,11], show:"maj7", rn:"maj7" },
+    m7:   { iv:[0,3,7,10], show:"m7",   rn:"7" },
+    m6:   { iv:[0,3,7,9],  show:"m6",   rn:"6" },
+    m7b5: { iv:[0,3,6,10], show:"m7♭5", rn:"ø7" },
+    dim:  { iv:[0,3,6],    show:"°",    rn:"°" },
+    dim7: { iv:[0,3,6,9],  show:"°7",   rn:"°7" },
+    aug:  { iv:[0,4,8],    show:"+",    rn:"+" },
+    sus:  { iv:[0,5,7],    show:"sus4", rn:"sus" },
+  };
+  const MINORISH = ["min","m7","m6","m7b5","dim","dim7"];
+  const QUAL_RX = [
+    [/^(maj7|M7|Δ7?|7M|maj9|M9|maj13|maj)$/, "maj7"],
+    [/^(m7b5|m7♭5|ø7?|-7b5|min7b5)$/, "m7b5"],
+    [/^(dim7|°7|o7)$/, "dim7"],
+    [/^(dim|°|o)$/, "dim"],
+    [/^(m7|min7|-7|m9|m11|min9|mi7)$/, "m7"],
+    [/^(m6|min6|-6)$/, "m6"],
+    [/^(m|min|mi|-|madd9)$/, "min"],
+    [/^(7|9|11|13|7sus4|7b9|7#9|7♭9|7♯9|7#11|7b13|9sus4)$/, "dom7"],
+    [/^(aug|\+|\+5|#5|♯5)$/, "aug"],
+    [/^(sus|sus4|sus2)$/, "sus"],
+    [/^(|6|add9|6\/9|69|M|5)$/, "maj"],
+  ];
+  const IT_ROOTS = [["sol","G"],["do","C"],["re","D"],["mi","E"],["fa","F"],["la","A"],["si","B"]];
+  const PRESETS = [
+    { name:"I–V–vi–IV", ch:[[0,"maj"],[7,"maj"],[9,"min"],[5,"maj"]] },
+    { name:"ii–V–I", ch:[[2,"m7"],[7,"dom7"],[0,"maj7"]] },
+    { name:"I–vi–IV–V", ch:[[0,"maj"],[9,"min"],[5,"maj"],[7,"maj"]] },
+    { name:"vi–IV–I–V", ch:[[9,"min"],[5,"maj"],[0,"maj"],[7,"maj"]] },
+    { name:"I–♭VII–IV (prestito)", ch:[[0,"maj"],[10,"maj"],[5,"maj"]] },
+    { name:"I–III7–vi–IV (dominante secondaria)", ch:[[0,"maj"],[4,"dom7"],[9,"min"],[5,"maj"]] },
+    { name:"Blues 12 battute", ch:[[0,"dom7"],[0,"dom7"],[0,"dom7"],[0,"dom7"],[5,"dom7"],[5,"dom7"],[0,"dom7"],[0,"dom7"],[7,"dom7"],[5,"dom7"],[0,"dom7"],[7,"dom7"]] },
+    { name:"i–♭VII–♭VI–V (andalusa, minore)", minor:true, ch:[[0,"min"],[10,"maj"],[8,"maj"],[7,"dom7"]] },
+    { name:"i–♭VI–♭III–♭VII (minore)", minor:true, ch:[[0,"min"],[8,"maj"],[3,"maj"],[10,"maj"]] },
+    { name:"iiø–V7–i (minore)", minor:true, ch:[[2,"m7b5"],[7,"dom7"],[0,"min"]] },
+  ];
+  const SEMI_DEG = { 0:"1",1:"b2",2:"2",3:"b3",4:"3",5:"4",6:"#4",7:"5",8:"b6",9:"6",10:"b7",11:"7" };
+  const RN_BASE = { 0:"I",1:"♭II",2:"II",3:"♭III",4:"III",5:"IV",6:"♯IV",7:"V",8:"♭VI",9:"VI",10:"♭VII",11:"VII" };
+  const QSUF_TXT = { maj:"", min:"m", dom7:"7", maj7:"maj7", m7:"m7", m7b5:"m7b5" };
+  const KEY_SCALES = [["major","maggiore"],["minor","minore naturale"],["harm","minore armonica"],["mel","minore melodica"],
+    ["dorian","dorica"],["phryg","frigia"],["lydian","lidia"],["mixo","misolidia"]];
+
+  function parseDeg(d) {
+    const m = d.match(/^([b#]*)(\d+)$/);
+    let acc = 0; for (const c of m[1]) acc += c === "#" ? 1 : -1;
+    const n = +m[2];
+    return { n, semi: ((MAJ[(n - 1) % 7] + acc) % 12 + 12) % 12 };
+  }
+  function spell(rli, rpc, deg) {
+    const { n, semi } = parseDeg(deg);
+    const li = (rli + n - 1) % 7, pc = (rpc + semi) % 12;
+    const acc = ((pc - LETTER_PC[li]) % 12 + 18) % 12 - 6;
+    return { deg, li, acc, pc };
+  }
+  const accStr = a => a > 0 ? "♯".repeat(a) : a < 0 ? "♭".repeat(-a) : "";
+  const noteName = n => (st.lang === "en" ? LETTERS[n.li] : IT[LETTERS[n.li]]) + accStr(n.acc);
+  const mod12 = x => ((x % 12) + 12) % 12;
+  const scaleById = id => SCALES.find(s => s.id === id) || SCALES[0];
+  function rootFrom(idx) {
+    const [l, a] = ROOTS[idx]; const li = LETTERS.indexOf(l);
+    return { li, acc: a, pc: mod12(LETTER_PC[li] + a) };
+  }
+  const semisOf = scale => scale.deg.map(d => parseDeg(d).semi);
+  const keyShort = id => (KEY_SCALES.find(k => k[0] === id) || KEY_SCALES[0])[1];
+  const rotate = (semis, i) => semis.map((_, j) => mod12(semis[(i + j) % 7] - semis[i]));
+  const MODE_NAMES = new Map();
+  [["major", ["ionico","dorico","frigio","lidio","misolidio","eolio","locrio"]],
+   ["harm", ["minore armonica","locrio ♮6","ionico ♯5","dorico ♯4","frigio dominante","lidio ♯2","superlocrio ♭♭7"]],
+   ["mel", ["minore melodica","dorico ♭2","lidio aumentato","lidio dominante","misolidio ♭6","locrio ♮2","superlocrio (alterata)"]]]
+    .forEach(([id, names]) => { const s = semisOf(scaleById(id)); names.forEach((nm, i) => MODE_NAMES.set(rotate(s, i).join(","), nm)); });
+  function modeScale(semis, i) {
+    const r = rotate(semis, i);
+    const deg = r.map((x, j) => { const a = x - MAJ[j]; return (a < 0 ? "b".repeat(-a) : "#".repeat(a)) + (j + 1); });
+    return { deg, name: MODE_NAMES.get(r.join(",")) || `modo ${i + 1}` };
+  }
+  function parseChord(tok) {
+    const orig = tok;
+    const t = tok.split("/")[0];
+    let letter = null, rest = "";
+    const low = t.toLowerCase();
+    for (const [it, en] of IT_ROOTS) {
+      if (low.startsWith(it) && !(it === "fa" && low.startsWith("fadd"))) { letter = en; rest = t.slice(it.length); break; }
+    }
+    if (!letter) {
+      const m = t.match(/^([A-Ga-g])(.*)$/);
+      if (!m) return { orig, error: true };
+      letter = m[1].toUpperCase(); rest = m[2];
+    }
+    let acc = 0;
+    while (rest.length && /^[#b♯♭]/.test(rest)) { acc += (rest[0] === "#" || rest[0] === "♯") ? 1 : -1; rest = rest.slice(1); }
+    const q = QUAL_RX.find(([rx]) => rx.test(rest));
+    if (!q) return { orig, error: true };
+    const li = LETTERS.indexOf(letter);
+    return { orig, li, acc, pc: mod12(LETTER_PC[li] + acc), q: q[1] };
+  }
+  function roman(rel, q) {
+    let b = RN_BASE[rel];
+    if (MINORISH.includes(q)) b = b.replace(/[IV]+/, x => x.toLowerCase());
+    return b + QUAL[q].rn;
+  }
+  function analyze(ch, key) {
+    const k = key.r, ks = semisOf(scaleById(key.id));
+    const keyName = `${noteName(k)} ${keyShort(key.id)}`;
+    const rel = mod12(ch.pc - k.pc);
+    const tones = QUAL[ch.q].iv.map(i => mod12(ch.pc + i));
+    const fits = set => tones.every(p => set.includes(mod12(p - k.pc)));
+    const name = noteName(ch) + QUAL[ch.q].show;
+    const base = { ch, name, tones, rn: roman(rel, ch.q) };
+    const mk = (scale, kind, why) => ({ ...base, scale, mode: `${noteName(ch)} ${scale.name}`, kind, why });
+    const named = (id, nm) => ({ deg: scaleById(id).deg, name: nm });
+    let i = ks.indexOf(rel);
+    if (i >= 0 && fits(ks))
+      return mk(modeScale(ks, i), "diatonic", `È il grado ${base.rn} di ${keyName}: suona le note di ${keyName} appoggiandoti su ${noteName(ch)}.`);
+    const minorKey = ks.includes(3);
+    const related = (minorKey ? ["minor", "harm", "mel", "major"] : ["minor", "major"]).filter(id => id !== key.id);
+    for (const id of related) {
+      const s = semisOf(scaleById(id)); i = s.indexOf(rel);
+      if (i >= 0 && fits(s)) {
+        const src = `${noteName(k)} ${keyShort(id)}`;
+        return mk(modeScale(s, i), "borrowed", `Non è in ${keyName}, ma è in ${src} (prestito): suona le note di ${src} appoggiandoti su ${noteName(ch)}.`);
+      }
+    }
+    if (rel === 0 && ch.q === "dom7")
+      return mk(named("mixo", "misolidio"), "outside", "È il I7 tipico del blues: la settima minore lo rende misolidio.");
+    if (ch.q === "maj" || ch.q === "dom7") {
+      const target = mod12(rel + 5), ti = ks.indexOf(target);
+      if (ti > 0) {
+        const minorTarget = mod12(ks[(ti + 2) % 7] - ks[ti]) === 3;
+        const tn = noteName(spell(k.li, k.pc, scaleById(key.id).deg[ti])) + (minorTarget ? "m" : "");
+        return mk(minorTarget ? named("phrdom", "frigio dominante") : named("mixo", "misolidio"), "secondary",
+          `È una dominante secondaria (V/${roman(target, minorTarget ? "min" : "maj")}): porta a ${tn}. ${minorTarget ? "Il frigio dominante ha la ♭9 e la ♭13 che preparano l'accordo minore." : "Il misolidio contiene la sua terza maggiore e la settima minore."}`);
+      }
+    }
+    const fb = { maj:["lydian","lidio"], maj7:["lydian","lidio"], dom7:["mixo","misolidio"], sus:["mixo","misolidio"], min:["dorian","dorico"], m7:["dorian","dorico"], m6:["dorian","dorico"],
+      m7b5:["locrian","locrio"], dim:["dimwh","diminuita (tono-semitono)"], dim7:["dimwh","diminuita (tono-semitono)"], aug:["whole","esatonale"] }[ch.q];
+    return mk(named(fb[0], fb[1]), "outside", `È fuori tonalità: ${fb[1].startsWith("dim") || fb[1] === "esatonale" ? "la scala" : "il modo"} ${fb[1]} contiene tutte le sue note ed è la scelta più comune per questo tipo di accordo.`);
+  }
+  function presetText(i, keyIdx) {
+    const k = rootFrom(keyIdx);
+    return PRESETS[i].ch.map(([s, q]) => noteName(spell(k.li, k.pc, SEMI_DEG[s])) + QSUF_TXT[q]).join(" ");
+  }
+  function detectKey(chords) {
+    let best = null;
+    ["major", "minor"].forEach(id => ROOTS.forEach((_, idx) => {
+      const key = { r: rootFrom(idx), id };
+      let score = 0;
+      chords.forEach((c, j) => {
+        const a = analyze(c, key);
+        score += a.kind === "diatonic" ? 3 : a.kind === "borrowed" || a.kind === "secondary" ? 1 : 0;
+        if (j === 0 && c.pc === key.r.pc) score += 2;
+        if (j === chords.length - 1 && c.pc === key.r.pc) score += 1;
+      });
+      if (!best || score > best.score) best = { idx, id, score };
+    }));
+    return best;
+  }
+
+  // ===== Impostazioni =====
+  const DEF = { prog: "Lam Fa Do Sol", key: "auto", bpm: 90, style: "pop", bassKind: "auto", compKind: "auto", melody: "off", melSeed: 1,
+    beats: 4, countIn: true, vol: { drums: 80, bass: 75, comp: 60, mel: 70 }, master: 80, lang: "it", sel: 0 };
+  const st = { ...DEF, ...store.get("matribox.ex", {}) };
+  st.vol = { ...DEF.vol, ...(st.vol || {}) };
+  let saveT = null;
+  const save = () => { clearTimeout(saveT); saveT = setTimeout(() => store.set("matribox.ex", st), 300); };
+  let analysis = [], keyUsed = null;
+
+  function analyzeProg() {
+    const toks = (st.prog || "").split(/[\s,|–—]+/).filter(Boolean);
+    const parsed = toks.map(parseChord);
+    const ok = parsed.filter(c => !c.error);
+    if (st.key === "auto") {
+      const best = ok.length ? detectKey(ok) : { idx: 9, id: "minor" };
+      keyUsed = { r: rootFrom(best.idx), id: best.id, idx: best.idx, auto: true };
+    } else {
+      const [idx, id] = st.key.split(":");
+      keyUsed = { r: rootFrom(+idx), id, idx: +idx, auto: false };
+    }
+    analysis = parsed.map(c => c.error ? c : analyze(c, keyUsed));
+    if (st.sel >= analysis.length) st.sel = 0;
+  }
+
+  // ===== Audio =====
+  let ctx = null;
+  function ac() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+
+  // campioni: suoni/suoni.json + file .ogg (Opus), salvati dal service worker dopo il primo download
+  const SND_V = 2;
+  const SMP = { state: "idle", got: 0, total: 0, drums: null, bass: null, piano: null };
+  async function loadSamples() {
+    if (SMP.state === "loading" || SMP.state === "ready") return;
+    SMP.state = "loading"; renderSnd();
+    try {
+      const man = await (await fetch(`suoni/suoni.json?v=${SND_V}`)).json();
+      const c = ac(), jobs = [];
+      const get = name => { SMP.total++; const p = fetch(`suoni/${name}?v=${SND_V}`).then(r => { if (!r.ok) throw new Error(name); return r.arrayBuffer(); })
+        .then(b => c.decodeAudioData(b)).then(buf => { SMP.got++; renderSnd(); return buf; }); jobs.push(p); return p; };
+      const drums = {};
+      for (const [k, layers] of Object.entries(man.drums)) drums[k] = layers.map(l => ({ rms: l.rms, bufs: l.files.map(get) }));
+      const bass = man.bass.map(b => ({ midi: b.midi, bufs: b.files.map(get) }));
+      const piano = man.piano.map(p => ({ midi: p.midi, bufs: p.files.map(get) }));
+      await Promise.all(jobs);
+      const res = async arr => { for (const x of arr) x.bufs = await Promise.all(x.bufs); return arr; };
+      for (const k in drums) await res(drums[k]);
+      SMP.drums = drums; SMP.bass = await res(bass); SMP.piano = await res(piano);
+      SMP.state = "ready";
+    } catch (e) {
+      SMP.state = "error"; log("Suoni dell'esercizio non caricati: " + e.message);
+    }
+    renderSnd();
+  }
+
+  function play(buf, t, gain, dest, rate = 1, stopAt = null, release = 0.08) {
+    const c = ac(), src = c.createBufferSource(), g = c.createGain();
+    src.buffer = buf; src.playbackRate.value = rate;
+    g.gain.setValueAtTime(gain, t);
+    src.connect(g).connect(dest); src.start(t);
+    if (stopAt != null && stopAt < t + buf.duration / rate) {
+      g.gain.setValueAtTime(gain, stopAt); g.gain.exponentialRampToValueAtTime(0.0001, stopAt + release);
+      src.stop(stopAt + release + 0.02);
+    }
+  }
+  const nearest = (arr, midi) => arr.reduce((b, x) => Math.abs(x.midi - midi) < Math.abs(b.midi - midi) ? x : b, arr[0]);
+
+  // ----- sintesi di riserva (GuitarApp), usata finché i campioni non sono pronti -----
+  let noiseBuf = null;
+  function noise() {
+    const c = ac();
+    if (!noiseBuf) { noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    return noiseBuf;
+  }
+  function perc(g, t, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.002 + dcy); }
+  function noiseHit(t, type, freq, peak, dcy, dest, q = 0.7) {
+    const c = ac(), src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = noise(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    src.connect(f).connect(g).connect(dest); perc(g, t, peak, dcy);
+    src.start(t, Math.random() * 0.4); src.stop(t + dcy + 0.05);
+  }
+  function toneHit(t, type, f0, f1, peak, dcy, dest) {
+    const c = ac(), o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dcy * 0.5);
+    o.connect(g).connect(dest); perc(g, t, peak, dcy); o.start(t); o.stop(t + dcy + 0.05);
+  }
+  function synthDrum(inst, t, v, dest) {
+    switch (inst) {
+      case "k": toneHit(t, "sine", 150, 45, 1.0 * v, 0.34, dest); noiseHit(t, "lowpass", 3000, 0.1 * v, 0.012, dest); break;
+      case "s": noiseHit(t, "highpass", 1300, 0.5 * v, 0.17, dest); toneHit(t, "triangle", 210, 170, 0.35 * v, 0.08, dest); break;
+      case "h": noiseHit(t, "highpass", 7500, 0.2 * v, 0.045, dest); break;
+      case "p": noiseHit(t, "highpass", 6500, 0.12 * v, 0.06, dest); break;
+      case "o": noiseHit(t, "highpass", 7000, 0.18 * v, 0.3, dest); break;
+      case "r": noiseHit(t, "bandpass", 6500, 0.22 * v, 0.5, dest, 1.2); toneHit(t, "square", 3900, 3900, 0.012 * v, 0.35, dest); break;
+      case "c": toneHit(t, "triangle", 850, 850, 0.28 * v, 0.035, dest); noiseHit(t, "bandpass", 2800, 0.2 * v, 0.03, dest, 2); break;
+      case "crash": noiseHit(t, "highpass", 3500, 0.3 * v, 1.5, dest); break;
+    }
+  }
+
+  // ----- strumenti -----
+  let openHat = null;                         // il charleston aperto si chiude al colpo successivo
+  function drum(inst, t, v, dest) {
+    if (inst === "m") { toneHit(t, "square", v > 0.9 ? 1800 : 1200, v > 0.9 ? 1800 : 1200, 0.16 * v, 0.03, dest); return; }
+    const layers = SMP.drums && SMP.drums[inst];
+    if (!layers) { synthDrum(inst, t, v, dest); return; }
+    const li = v < 0.45 ? 0 : v < 0.86 ? 1 : 2, L = layers[li];
+    const nominal = [0.3, 0.72, 1][li];
+    const buf = L.bufs[Math.floor(Math.random() * L.bufs.length)];
+    if ((inst === "h" || inst === "p" || inst === "o") && openHat && openHat.t < t) {
+      openHat.g.gain.setValueAtTime(openHat.gain, t); openHat.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      openHat.src.stop(t + 0.08); openHat = null;
+    }
+    const c = ac(), src = c.createBufferSource(), g = c.createGain(), gain = 0.95 * Math.min(1.25, v / nominal);
+    src.buffer = buf; g.gain.value = gain; src.connect(g).connect(dest); src.start(t);
+    if (inst === "o") openHat = { src, g, t, gain };
+  }
+  function bassAt(midi, t, dur, dest) {
+    if (!SMP.bass) {                           // riserva: basso sintetizzato
+      const c = ac(), o1 = c.createOscillator(), o2 = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
+      o1.type = "sawtooth"; o1.frequency.value = hz(midi); o2.type = "sine"; o2.frequency.value = hz(midi);
+      lp.type = "lowpass"; lp.Q.value = 1.5; lp.frequency.setValueAtTime(1100, t); lp.frequency.exponentialRampToValueAtTime(300, t + 0.25);
+      o1.connect(lp); o2.connect(lp); lp.connect(g).connect(dest);
+      const end = t + Math.max(0.05, dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55, t + 0.008);
+      g.gain.linearRampToValueAtTime(0.4, end - 0.02); g.gain.exponentialRampToValueAtTime(0.0001, end + 0.05);
+      o1.start(t); o2.start(t); o1.stop(end + 0.08); o2.stop(end + 0.08);
+      return;
+    }
+    const s = nearest(SMP.bass, midi), buf = s.bufs[Math.random() < 0.7 ? 0 : 1];
+    play(buf, t, 0.9, dest, Math.pow(2, (midi - s.midi) / 12), t + Math.max(0.08, dur), 0.07);
+  }
+  function pianoAt(midi, t, gain, dur, dest, release = 0.35) {
+    if (!SMP.piano) {                          // riserva: corda pizzicata semplice
+      const c = ac(), o = c.createOscillator(), g = c.createGain();
+      o.type = "triangle"; o.frequency.value = hz(midi); o.connect(g).connect(dest);
+      perc(g, t, gain * 0.8, Math.max(0.2, dur || 1)); o.start(t); o.stop(t + Math.max(0.3, dur || 1) + 0.1);
+      return;
+    }
+    const s = nearest(SMP.piano, midi), loud = gain > 0.26 && s.bufs[1];
+    const buf = loud ? s.bufs[1] : s.bufs[0];
+    play(buf, t, gain * (loud ? 2.2 : 3.2), dest, Math.pow(2, (midi - s.midi) / 12), dur ? t + dur : null, release);
+  }
+
+  // ===== Stili e linee (da GuitarApp) =====
+  // Griglia a sedicesimi; ogni pattern di batteria è una battuta da 16 passi.
+  // Caratteri: X accento, x normale, g leggero; per la plettrata D giù, d giù leggera, u su, s stoppato, m palm mute.
+  const STYLES = {
+    pop:     { name:"Pop", d:{ k:"x.....x.x.......", s:"....X.......X...", h:"x.x.x.x.x.x.x.x." }, bass:"eighths", comp:"strum", strum:"D...D.u...u.D.u.", crash:true },
+    rock:    { name:"Rock", d:{ k:"x.......x.x.....", s:"....X.......X...", h:"x.x.x.x.x.x.x.x." }, bass:"eighths", comp:"strum", strum:"D.d.D.d.D.d.D.d.", crash:true },
+    funk:    { name:"Funk", d:{ k:"x..x......x..x..", s:"....X..g.g..X..g", h:"XgxgXgxgXgxgXgxg" }, bass:"funk", comp:"strum", strum:"s..s..s.s.s..s.." },
+    shuffle: { name:"Blues shuffle", swing:.33, d:{ k:"x.......x.......", s:"....X.......X...", h:"x.x.x.x.x.x.x.x." }, bass:"boogie", comp:"strum", strum:"D.d.D.d.D.d.D.d." },
+    ballad:  { name:"Ballata", d:{ k:"x.........x.....", s:"........X.......", h:"x.g.x.g.x.g.x.g." }, bass:"rootfifth", comp:"arp" },
+    metal:   { name:"Metal", d:{ k:"xxxxxxxxxxxxxxxx", s:"....X.......X...", h:"x...x...x...x..." }, bass:"eighths", comp:"strum", strum:"m.m.m.m.m.m.m.m.", power:true, crash:true },
+    reggae:  { name:"Reggae (one drop)", swing:.2, d:{ k:"........X.......", c:"........x.......", h:"x.x.x.x.x.x.x.x." }, bass:"sync", comp:"strum", strum:"....s.......s..." },
+    bossa:   { name:"Bossa nova", d:{ k:"x..xx..xx..xx..x", c:"x..x..x...x..x..", h:"gggggggggggggggg" }, bass:"bossa", comp:"strum", strum:"s..s..s...s..s.." },
+    jazz:    { name:"Jazz swing", swing:.33, d:{ r:"x...x.x.x...x.x.", p:"....x.......x...", k:"g...g...g...g..." }, bass:"walking", comp:"strum", strum:"s.....s........." },
+    click:   { name:"Solo metronomo", d:{ m:"X...x...x...x..." }, bass:"root", comp:"strum", strum:"D..............." },
+  };
+  const BASS_KINDS = [["auto","Dallo stile"],["root","Fondamentale (un colpo per battito)"],["eighths","Fondamentale a crome"],["rootfifth","Fondamentale e quinta"],
+    ["octave","Ottave"],["arp","Arpeggio"],["walking","Walking"],["boogie","Boogie"],["funk","Funk"],["sync","Sincopato (reggae)"],["bossa","Bossa"],["off","Spento"]];
+  const COMP_KINDS = [["auto","Dallo stile"],["strum","Ritmico"],["arp","Arpeggio"],["pad","Accordi tenuti"],["off","Spento"]];
+  const MEL_KINDS = [["off","Spenta"],["simple","Semplice"],["busy","Movimentata"],["low","Grave, lenta"]];
+  const PARTS = [["drums","Batteria"],["bass","Basso"],["comp","Pianoforte"],["mel","Melodia"]];
+
+  function voicing(a, power) {
+    if (power) { const r = 40 + mod12(a.ch.pc - 40); return [r, r + 7, r + 12]; }
+    const r = 48 + mod12(a.ch.pc - 48), out = [r]; let m = r;
+    a.tones.slice(1).forEach(pc => { do { m++; } while (m % 12 !== pc); out.push(m); });
+    if (out.length < 4) out.push(r + 12);
+    return out;
+  }
+  function bassLine(a, nextA, L, kind) {
+    const r = 28 + mod12(a.ch.pc - 28);
+    const iv = i => mod12((a.tones[i] ?? a.tones[0]) - a.ch.pc);
+    const third = iv(1), fifth = iv(2), top = a.tones.length > 3 ? iv(3) : 12;
+    const ev = [], add = (at, m, len) => { if (at < L) ev.push({ at, midi: m, len: Math.min(len, L - at) }); };
+    const rep = (len, pat) => { for (let b = 0; b < L; b += len) pat.forEach(([s, i, l]) => add(b + s, r + i, l)); };
+    switch (kind) {
+      case "root": rep(4, [[0, 0, 3.5]]); break;
+      case "eighths": rep(2, [[0, 0, 1.7]]); break;
+      case "rootfifth": rep(8, [[0, 0, 3.7], [4, fifth, 3.7]]); break;
+      case "octave": rep(4, [[0, 0, 1.6], [2, 12, 1.6]]); break;
+      case "arp": rep(16, [[0, 0, 3.6], [4, third, 3.6], [8, fifth, 3.6], [12, top, 3.6]]); break;
+      case "boogie": rep(16, [[0, 0, 1.8], [2, 0, 1.8], [4, third, 1.8], [6, third, 1.8], [8, fifth, 1.8], [10, fifth, 1.8], [12, 9, 1.8], [14, 10, 1.8]]); break;
+      case "funk": rep(16, [[0, 0, 1.5], [3, 12, 1], [6, 0, 1], [8, 0, 1.5], [10, fifth, 1], [11, 12, 0.8], [14, 10, 1.5]]); break;
+      case "sync": rep(16, [[0, 0, 3], [6, 0, 1.5], [8, fifth, 3.5], [14, third, 1.5]]); break;
+      case "bossa": rep(16, [[0, 0, 5.5], [6, fifth - 12 + (r + fifth - 12 < 28 ? 12 : 0), 1.5], [8, fifth, 5.5], [14, 0, 1.5]]); break;
+      case "walking": {
+        const nr = nextA ? 28 + mod12(nextA.ch.pc - 28) : r, ups = [third, fifth, top];
+        let prev = r;
+        for (let b = 0; b < L / 4; b++) {
+          const m = b === 0 ? r : b === L / 4 - 1 ? nr + (prev > nr ? 1 : -1) : r + ups[(b - 1) % 3];
+          add(b * 4, m, 3.6); prev = m;
+        }
+        break;
+      }
+    }
+    return ev;
+  }
+  function compLine(a, L, kind, style) {
+    const ev = [];
+    if (kind === "pad") ev.push({ at: 0, type: "pad", v: voicing(a), len: L });
+    else if (kind === "arp") {
+      const v = voicing(a).concat(voicing(a)[1] + 12), seq = [0, 1, 2, 3, 4, 3, 2, 1];
+      for (let s = 0, i = 0; s < L; s += 2, i++) ev.push({ at: s, type: "note", midi: v[seq[i % seq.length] % v.length], len: 6 });
+    } else if (kind === "strum") {
+      const pat = style.strum || "D.......D.......", v = voicing(a, style.power);
+      for (let s = 0; s < L; s++) {
+        const ch = pat[s % 16]; if (ch === ".") continue;
+        let n = 1; while (n < 16 && pat[(s + n) % 16] === ".") n++;
+        ev.push({ at: s, type: "strum", ch, v, len: Math.min(n, L - s) });
+      }
+    }
+    return ev;
+  }
+  function rng(seed) {
+    return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function makeMelody(valid, L, kind, seed) {
+    const R = rng(seed), lowMel = kind === "low";
+    const lo = lowMel ? 52 : 62, hi = lowMel ? 72 : 81;
+    const durs = kind === "busy" ? [2, 2, 2, 2, 1, 1, 3, 4, 4] : lowMel ? [8, 8, 6, 12, 4] : [4, 4, 4, 8, 6, 2, 2];
+    const restP = kind === "busy" ? 0.12 : 0.22;
+    let prev = Math.round((lo + hi) / 2);
+    return valid.map(ci => {
+      const a = analysis[ci];
+      const scalePcs = a.scale.deg.map(d => mod12(a.ch.pc + parseDeg(d).semi));
+      const pool = []; for (let m = lo; m <= hi; m++) if (scalePcs.includes(m % 12)) pool.push(m);
+      const chordPool = pool.filter(m => a.tones.includes(m % 12));
+      const ev = []; let s = 0;
+      while (s < L) {
+        let d = durs[Math.floor(R() * durs.length)]; if (s + d > L) d = L - s;
+        if (!(s > 0 && R() < restP)) {
+          let m;
+          if (s % 8 === 0 || d >= 6) {
+            const near = chordPool.slice().sort((x, y) => Math.abs(x - prev) - Math.abs(y - prev));
+            m = near[R() < 0.7 ? 0 : Math.min(1, near.length - 1)];
+          } else {
+            let i = pool.indexOf(pool.reduce((b, x) => Math.abs(x - prev) < Math.abs(b - prev) ? x : b, pool[0]));
+            let dir = R() < 0.5 ? -1 : 1;
+            if (prev > hi - 4) dir = -1; if (prev < lo + 4) dir = 1;
+            i = Math.max(0, Math.min(pool.length - 1, i + dir * (R() < 0.75 ? 1 : 2)));
+            m = pool[i];
+          }
+          ev.push({ at: s, midi: m, len: d * 0.92 }); prev = m;
+        }
+        s += d;
+      }
+      return ev;
+    });
+  }
+
+  // ===== Sequencer (da GuitarApp) =====
+  const BT = { timer: null, step: 0, ci: 0, within: 0, next: 0, master: null, buses: null, mel: null, melKey: "", bassEv: [], compEv: [], valid: [] };
+  function buses() {
+    const c = ac();
+    if (!BT.buses) {
+      const comp = c.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 3; comp.connect(c.destination);
+      BT.master = c.createGain(); BT.master.connect(comp);
+      BT.buses = {};
+      for (const [k] of PARTS) { const g = c.createGain(); g.connect(BT.master); BT.buses[k] = g; }
+    }
+    BT.master.gain.value = Math.pow(st.master / 100, 1.5) * 1.15;
+    for (const [k] of PARTS) BT.buses[k].gain.value = Math.pow((st.vol[k] ?? 70) / 100, 1.5);
+    return BT.buses;
+  }
+  const btValid = () => analysis.map((a, j) => a && !a.error ? j : -1).filter(j => j >= 0);
+  const swingOff = (step, sw, s16) => !sw ? 0 : step % 4 === 2 ? sw * 2 * s16 : step % 2 === 1 ? sw * s16 : 0;
+  const playing = () => !!BT.timer;
+
+  function start() {
+    analyzeProg();
+    BT.valid = btValid();
+    if (!BT.valid.length) { toast("Scrivi almeno un accordo, per esempio La- Fa Do Sol"); return; }
+    if (typeof bsPause === "function" && typeof BS !== "undefined" && BS.audio && !BS.audio.paused) bsPause();   // niente base e esercizio insieme
+    const c = ac(); buses();
+    if (SMP.state !== "ready") loadSamples();
+    BT.ci = Math.max(0, BT.valid.indexOf(st.sel)); BT.within = 0;
+    BT.step = st.countIn ? -16 : 0; BT.next = c.currentTime + 0.15; BT.melKey = ""; openHat = null;
+    BT.timer = setInterval(tick, 25); tick();
+    renderPlay();
+  }
+  function stop() {
+    if (BT.timer) clearInterval(BT.timer);
+    BT.timer = null;
+    if (BT.master) { try { BT.master.disconnect(); } catch (e) {} BT.master = null; BT.buses = null; }   // silenzio immediato
+    openHat = null; renderPlay(); renderNow();
+  }
+  function tick() { const c = ac(); while (BT.timer && BT.next < c.currentTime + 0.15) stepAt(BT.next); }
+  function stepAt(t) {
+    const c = ac(), s16 = 60 / st.bpm / 4, style = STYLES[st.style] || STYLES.pop, B = buses();
+    const adv = () => { BT.step++; BT.next += s16; };
+    if (BT.step < 0) {                                  // conteggio: 4 click
+      if (BT.step % 4 === 0) drum("m", t, BT.step === -16 ? 1 : 0.7, B.drums);
+      return adv();
+    }
+    const L = +st.beats * 4;
+    if (BT.within === 0) {                              // inizio di un accordo: prepara le linee
+      BT.valid = btValid();
+      if (!BT.valid.length) { stop(); return; }
+      BT.ci %= BT.valid.length;
+      const a = analysis[BT.valid[BT.ci]], nextA = analysis[BT.valid[(BT.ci + 1) % BT.valid.length]];
+      const bk = st.bassKind === "auto" ? style.bass : st.bassKind, ck = st.compKind === "auto" ? style.comp : st.compKind;
+      BT.bassEv = bk === "off" ? [] : bassLine(a, nextA, L, bk);
+      BT.compEv = ck === "off" ? [] : compLine(a, L, ck, style);
+      const mk = [st.melody, st.melSeed, L, BT.valid.map(i => analysis[i].name + analysis[i].mode).join()].join("|");
+      if (mk !== BT.melKey) { BT.melKey = mk; BT.mel = st.melody === "off" ? null : makeMelody(BT.valid, L, st.melody, st.melSeed); }
+      const idx = BT.valid[BT.ci];
+      setTimeout(() => { if (BT.timer) { st.sel = idx; renderChips(); renderNow(); } }, Math.max(0, (t - c.currentTime) * 1000));
+    }
+    const tt = t + swingOff(BT.step, style.swing, s16), w = BT.within;
+    const ds = BT.step % 16;
+    for (const [inst, pat] of Object.entries(style.d)) {
+      const ch = pat[ds]; if (ch === ".") continue;
+      drum(inst, tt, (ch === "X" ? 1 : ch === "g" ? 0.3 : 0.72) * (0.92 + Math.random() * 0.08), B.drums);
+    }
+    if (style.crash && w === 0 && BT.ci === 0) drum("crash", tt, 0.8, B.drums);
+    BT.bassEv.forEach(e => { if (e.at === w) bassAt(e.midi, tt, e.len * s16, B.bass); });
+    BT.compEv.forEach(e => {
+      if (e.at !== w) return;
+      if (e.type === "pad") e.v.forEach((m, k) => pianoAt(m, tt + k * 0.012, 0.16, e.len * s16, B.comp, 0.5));
+      else if (e.type === "note") pianoAt(e.midi, tt, 0.24, e.len * s16, B.comp);
+      else {
+        const short = e.ch === "s" || e.ch === "m", up = e.ch === "u";
+        const gain = { D: 0.3, d: 0.2, u: 0.17, s: 0.26, m: 0.3 }[e.ch] || 0.25;
+        const notes = up ? e.v.slice(1) : e.v, dur = short ? (e.ch === "m" ? 0.1 : 0.14) : e.len * s16 * 0.95;
+        notes.forEach((m, k) => pianoAt(m, tt + k * 0.006, gain * 0.7, dur, B.comp, short ? 0.06 : 0.3));
+      }
+    });
+    if (BT.mel) (BT.mel[BT.ci] || []).forEach(e => { if (e.at === w) pianoAt(e.midi, tt, 0.34, e.len * s16, B.mel, 0.25); });
+    BT.within++;
+    if (BT.within >= L) { BT.within = 0; BT.ci++; }
+    adv();
+  }
+
+  // ===== Interfaccia =====
+  const keyLabel = k => `${noteName(k.r)} ${keyShort(k.id)}`;
+  function renderSnd() {
+    const el = $("exSnd"); if (!el) return;
+    el.textContent = SMP.state === "ready" ? "Suoni realistici pronti."
+      : SMP.state === "loading" ? `Scarico i suoni realistici: ${SMP.total ? Math.round(SMP.got / SMP.total * 100) : 0}%`
+      : SMP.state === "error" ? "Suoni realistici non disponibili: per ora suona la versione sintetizzata. Riprova con la connessione attiva."
+      : "I suoni realistici (circa 3 MB) si scaricano al primo avvio e poi restano sul tablet.";
+  }
+  function renderPlay() {
+    const on = playing();
+    $("exPlay").classList.toggle("on", on); $("exPlay").setAttribute("aria-pressed", String(on));
+    $("exPlay").textContent = on ? "■ Ferma" : "▶ Avvia";
+  }
+  function renderChips() {
+    const wrap = $("exChords"); wrap.innerHTML = "";
+    analysis.forEach((a, i) => {
+      const b = document.createElement("button");
+      b.className = "chip ex-chip" + (a.error ? " bad" : "") + (i === st.sel ? " active" : "");
+      b.innerHTML = "<b></b><span></span>";
+      b.querySelector("b").textContent = a.error ? "?" : a.rn;
+      b.querySelector("span").textContent = a.error ? a.orig : a.name;
+      b.title = a.error ? "Accordo non riconosciuto" : a.mode;
+      b.disabled = !!a.error;
+      b.onclick = () => {
+        st.sel = i; save(); renderChips(); renderNow();
+        if (playing()) { const v = btValid(); BT.ci = Math.max(0, v.indexOf(i)); BT.within = 0; }
+      };
+      wrap.appendChild(b);
+    });
+    if (!analysis.length) wrap.innerHTML = '<p class="hint">Scrivi gli accordi qui sopra.</p>';
+  }
+  function renderNow() {
+    const a = analysis[st.sel];
+    $("exKey").textContent = keyUsed ? (keyUsed.auto ? `Tonalità riconosciuta: ${keyLabel(keyUsed)}` : `Tonalità: ${keyLabel(keyUsed)}`) : "";
+    if (!a || a.error) { $("exNowChord").textContent = "--"; $("exNowMode").textContent = ""; $("exNowWhy").textContent = ""; return; }
+    $("exNowChord").textContent = a.name;
+    $("exNowMode").textContent = `Suona: ${a.mode}`;
+    $("exNowWhy").textContent = a.why;
+    const next = btValid(), j = next.indexOf(st.sel), n = next.length > 1 ? analysis[next[(j + 1) % next.length]] : null;
+    $("exNext").textContent = n ? `Poi: ${n.name}` : "";
+  }
+  function renderAll() {
+    analyzeProg();
+    renderChips(); renderNow(); renderPlay(); renderSnd();
+    $("exBpmV").textContent = st.bpm; $("exBpm").value = st.bpm; paintRange($("exBpm"));
+  }
+  function setBpm(v) { st.bpm = Math.max(40, Math.min(240, Math.round(v))); save(); $("exBpmV").textContent = st.bpm; $("exBpm").value = st.bpm; paintRange($("exBpm")); }
+
+  function fillSelect(id, items, val, on) {
+    const s = $(id); s.innerHTML = "";
+    items.forEach(([v, n]) => s.append(new Option(n, v, false, v === val)));
+    s.onchange = () => { on(s.value); save(); };
+  }
+  function init() {
+    fillSelect("exStyle", Object.entries(STYLES).map(([k, s]) => [k, s.name]), st.style, v => { st.style = v; });
+    fillSelect("exBass", BASS_KINDS, st.bassKind, v => { st.bassKind = v; });
+    fillSelect("exComp", COMP_KINDS, st.compKind, v => { st.compKind = v; });
+    fillSelect("exMel", MEL_KINDS, st.melody, v => { st.melody = v; $("exNewMel").disabled = v === "off"; });
+    fillSelect("exBeats", [["2", "2"], ["4", "4"], ["8", "8"], ["16", "16"]], String(st.beats), v => { st.beats = +v; });
+    const keys = [["auto", "Automatica"]];
+    ROOTS.forEach((_, i) => ["major", "minor"].forEach(id => keys.push([`${i}:${id}`, `${noteName(rootFrom(i))} ${keyShort(id)}`])));
+    fillSelect("exKeySel", keys, st.key, v => { st.key = v; renderAll(); });
+    // progressioni pronte nella tonalità in uso
+    const pre = $("exPreset");
+    const fillPre = () => { pre.innerHTML = ""; pre.append(new Option("Progressioni pronte…", "")); PRESETS.forEach((p, i) => pre.append(new Option(p.name, i))); };
+    fillPre();
+    pre.onchange = () => {
+      if (pre.value === "") return;
+      const p = PRESETS[+pre.value];
+      let idx = keyUsed ? keyUsed.idx : 9;
+      if (st.key === "auto") { if (p.minor && keyUsed && keyUsed.id === "major") idx = (idx + 9) % 12; if (!p.minor && keyUsed && keyUsed.id === "minor") idx = (idx + 3) % 12; }
+      st.prog = presetText(+pre.value, idx); st.sel = 0; $("exProg").value = st.prog; save(); renderAll(); pre.value = "";
+    };
+    $("exProg").value = st.prog;
+    $("exProg").oninput = () => { st.prog = $("exProg").value; st.sel = 0; save(); renderAll(); };
+    $("exPlay").onclick = () => (playing() ? stop() : start());
+    $("exNewMel").onclick = () => { st.melSeed = (st.melSeed % 9999) + 1; save(); toast("Nuova melodia dal prossimo giro"); };
+    $("exNewMel").disabled = st.melody === "off";
+    $("exCount").checked = !!st.countIn; $("exCount").onchange = () => { st.countIn = $("exCount").checked; save(); };
+    $("exBpm").oninput = () => setBpm(+$("exBpm").value);
+    $("exMinus").onclick = () => setBpm(st.bpm - 1);
+    $("exPlus").onclick = () => setBpm(st.bpm + 1);
+    let taps = [];
+    $("exTap").onclick = () => {
+      const now = performance.now();
+      taps = taps.filter(t => now - t < 2500); taps.push(now);
+      if (taps.length >= 4) { const g = taps.slice(1).map((t, i) => t - taps[i]); setBpm(60000 / (g.reduce((a, b) => a + b, 0) / g.length)); }
+    };
+    // mixer
+    const mix = $("exMix"); mix.innerHTML = "";
+    [["master", "Volume generale"], ...PARTS].forEach(([k, n]) => {
+      const row = document.createElement("div"); row.className = "prm";
+      row.innerHTML = `<label for="exV_${k}"></label><output id="exV_${k}V"></output><input type="range" id="exV_${k}" min="0" max="100" step="1">`;
+      row.querySelector("label").textContent = n;
+      mix.appendChild(row);
+      const inp = $(`exV_${k}`), get = () => k === "master" ? st.master : st.vol[k];
+      inp.value = get(); $(`exV_${k}V`).textContent = get() + "%"; paintRange(inp);
+      inp.oninput = () => {
+        const v = +inp.value; if (k === "master") st.master = v; else st.vol[k] = v;
+        $(`exV_${k}V`).textContent = v + "%"; paintRange(inp); save(); if (BT.buses) buses();
+      };
+    });
+    document.addEventListener("keydown", e => {
+      if (!$("v-ex").classList.contains("active") || e.ctrlKey || e.metaKey || e.altKey || typing(e) || document.querySelector("dialog[open]")) return;
+      if (e.key === " ") { e.preventDefault(); e.stopImmediatePropagation(); playing() ? stop() : start(); }
+    }, true);
+    renderAll();
+  }
+  return { init, stop, playing, loadSamples };
+})();
+
 // ---------- Avvio ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
 $("connectBtn").onclick = connect; $("connectBig").onclick = connect;
@@ -2816,7 +3541,7 @@ $("rcRefresh").onclick = () => listInputs().catch(e => { $("rcSrc").textContent 
 $("tuBtn").onclick = () => (tuner ? stopTuner() : startTuner());
 window.addEventListener("beforeunload", e => { if (dirty || takes.length) { e.preventDefault(); e.returnValue = ""; } });
 
-initDrum(); initFeatures(); initBase();renderLibrary(); renderSetlist(); renderTakes();
+initDrum(); initFeatures(); initBase(); Esercizio.init(); renderLibrary(); renderSetlist(); renderTakes();
 showView(store.get("matribox.view", "v-play"));
 // App installabile e offline (solo su https o localhost)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
