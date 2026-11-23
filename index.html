@@ -262,6 +262,8 @@ body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { op
 .song-title small { display: block; color: var(--dust); font-size: 14px; }
 .song-title b { font: 700 30px/1.1 var(--display); }
 .song-note { margin: 8px 0 0; color: var(--brass); }
+.song-off { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: var(--r-sm); color: var(--dust); }
+.song-off span { flex: 1 1 220px; }
 .parts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .chip { flex: 0 0 auto; min-width: 150px; height: 64px; padding: 0 16px; border-radius: var(--r-md); background: var(--panel-2);
   text-align: left; display: flex; flex-direction: column; justify-content: center; }
@@ -1917,6 +1919,12 @@ if (!sets) {                                     // migrazione dalla scaletta se
 const saveSets = () => store.set("matribox.setlists", sets);
 const activeList = () => sets.lists.find(l => l.id === sets.active) || sets.lists[0] || null;
 const keyOf = () => current ? label(current.bank, current.slot) : "";
+// parte del brano su cui si trova il pedale adesso (-1 se il preset attuale non è nel brano)
+const songPartOf = song => {
+  const k = keyOf(); if (!song || !k) return -1;
+  if (song.parts[sets.part] && song.parts[sets.part].key === k) return sets.part;
+  return song.parts.findIndex(p => p.key === k);
+};
 const inActiveList = key => { const l = activeList(); return !!(l && l.songs.some(s => s.parts.some(p => p.key === key))); };
 
 function ensureList() {
@@ -1950,6 +1958,7 @@ function step(dir) {
   const l = activeList();
   if (!l || !l.songs.length) { if (current) selectPreset(current.bank, current.slot + dir); return; }
   const song = l.songs[sets.song] || l.songs[0];
+  if (current && songPartOf(song) < 0) { goTo(sets.song, sets.part); return; }   // fuori scaletta: prima torno al brano
   let s = sets.song, p = sets.part + dir;
   if (p >= song.parts.length) { s++; p = 0; }
   else if (p < 0) { s--; p = s >= 0 ? (l.songs[s].parts.length - 1) : 0; }
@@ -2001,6 +2010,13 @@ function renderSetlist() {
   box.querySelector(".parts").appendChild(partButtons(song, "chip"));
   $("songPrev").onclick = () => stepSong(-1);
   $("songNext").onclick = () => stepSong(1);
+  if (current && songPartOf(song) < 0) {            // preset scelto a mano: la scaletta resta in pausa
+    const off = document.createElement("div"); off.className = "song-off";
+    off.innerHTML = `<span></span><button class="btn small">Torna al brano</button>`;
+    off.querySelector("span").textContent = `${keyOf()} non fa parte di questo brano: la scaletta è in pausa` + (fsFollow ? " e i footswitch cambiano preset uno alla volta." : ".");
+    off.querySelector("button").onclick = () => goTo(sets.song, Math.min(sets.part, song.parts.length - 1));
+    box.appendChild(off);
+  }
 }
 
 // ---------- Vista Scalette: gestione ----------
@@ -2125,14 +2141,13 @@ function pedalFollow(bank, slot) {
   if (dir === -98) dir = 1; else if (dir === 98) dir = -1;          // P99 → P01 e viceversa
   if (dir !== 1 && dir !== -1) return false;                         // salto: lo lascio fare
   sets.song = Math.min(sets.song, l.songs.length - 1);
-  const song = l.songs[sets.song], here = song.parts[sets.part];
-  let s = sets.song, p = sets.part;
-  if (here && here.key === keyOf()) {                                // sono sulla scaletta: avanti o indietro
-    p += dir;
-    if (p >= song.parts.length) { s++; p = 0; }
-    else if (p < 0) { s--; p = s >= 0 ? l.songs[s].parts.length - 1 : 0; }
-    if (s < 0 || s >= l.songs.length) { toast(dir > 0 ? "Fine della scaletta" : "Inizio della scaletta"); s = sets.song; p = sets.part; }
-  }                                                                  // altrimenti torno al punto della scaletta
+  const song = l.songs[sets.song];
+  let s = sets.song, p = songPartOf(song);
+  if (p < 0) return false;                                           // fuori scaletta: il pedale cambia preset normalmente
+  p += dir;
+  if (p >= song.parts.length) { s++; p = 0; }
+  else if (p < 0) { s--; p = s >= 0 ? l.songs[s].parts.length - 1 : 0; }
+  if (s < 0 || s >= l.songs.length) { toast(dir > 0 ? "Fine della scaletta" : "Inizio della scaletta"); s = sets.song; p = songPartOf(song); }
   const target = l.songs[s].parts[p];
   dirty = false;                                                     // il pedale ha già lasciato il preset in modifica
   log(`← footswitch ${dir > 0 ? "su" : "giù"}: scaletta → ${target.key}`);
