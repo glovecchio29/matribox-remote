@@ -282,6 +282,44 @@ body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { op
 .ex-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; margin-top: 22px; }
 .ex-fields .btn { grid-column: 1 / -1; }
 .ex-mix { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 14px 18px; margin: 22px 0 8px; }
+/* Suona e ascolta: manico e punteggio */
+.pr { margin-top: 22px; padding: 16px 18px; background: var(--panel); border-radius: var(--r-lg); }
+.pr-bar { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.pr-toggle.on { background: var(--ok); color: #062611; }
+.pr-goal { margin: 12px 0 4px; color: var(--cream); }
+.pr-mode { display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+.pr-mode b { font: 600 22px/1.2 var(--display); color: var(--brass); }
+.pr-mode span { color: var(--dust); }
+.pr-board { margin: 10px 0 6px; overflow-x: auto; }
+.fb { width: 100%; min-width: 640px; height: auto; display: block; }
+.fb-str { stroke: var(--dust); opacity: .7; }
+.fb-fret { stroke: var(--rule); stroke-width: 2; }
+.fb-nut { stroke: var(--cream); stroke-width: 6; }
+.fb-mark { fill: var(--panel-2); }
+.fb-num { fill: var(--dust); font: 600 15px var(--display); text-anchor: middle; }
+.fb-dot circle { fill: none; stroke: none; transition: fill .15s, stroke .15s; }
+.fb-dot text { fill: var(--cream); font: 700 13px var(--display); text-anchor: middle; pointer-events: none; }
+.fb-dot.fb-scale circle { fill: var(--panel-2); stroke: var(--dust); stroke-width: 1.5; }
+.fb-dot.fb-tone circle { fill: var(--cream); }
+.fb-dot.fb-tone text { fill: var(--tolex); }
+.fb-dot.fb-root circle { fill: var(--brass); }
+.fb-dot.fb-root text { fill: var(--brass-ink); }
+.fb-dot.fb-char circle { fill: var(--panel-2); stroke: var(--brass); stroke-width: 3; stroke-dasharray: 4 3; }
+.fb-dot.hit-in circle { stroke: var(--ok); stroke-width: 6; stroke-dasharray: none; }
+.fb-dot.hit-out circle { fill: var(--danger); stroke: var(--danger); stroke-width: 4; stroke-dasharray: none; }
+.fb-dot.hit-out text { fill: #fff; }
+.pr-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--dust); font-size: 14px; }
+.pr-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 6px; vertical-align: -2px; }
+.lg-root { background: var(--brass); } .lg-tone { background: var(--cream); }
+.lg-char { border: 2px dashed var(--brass); } .lg-scale { background: var(--panel-2); border: 1.5px solid var(--dust); }
+.pr-score { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.pr-stat { background: var(--panel-2); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 4px; }
+.pr-stat b { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.pr-stat span { color: var(--dust); font-size: 14px; }
+.pr-laps { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 4px; color: var(--dust); }
+.pr-laps b { color: var(--cream); margin-right: 8px; }
+.pr-cal { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.pr-cal .hint { flex-basis: 100%; margin: 0; }
 .as-dev { display: grid; grid-template-columns: auto 1fr 1fr; gap: 8px; align-items: center; }
 .as-dev select[hidden] { display: none; }
 .as-live { display: grid; grid-template-columns: 180px 1fr; gap: 6px 18px; align-items: center; margin: 12px 0; }
@@ -291,6 +329,8 @@ body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { op
 .as-out { white-space: pre-wrap; background: var(--panel-2); border-radius: var(--r-md); padding: 12px 14px; font-size: 14px; color: var(--cream); }
 @media (max-width: 430px) {
   .as-dev, .as-live { grid-template-columns: 1fr; }
+  .pr-bar { grid-template-columns: 1fr; }
+  .pr-score { grid-template-columns: 1fr; }
   .tabs button { font-size: 10.5px; letter-spacing: -.01em; }
 }
 @media (max-width: 760px) {
@@ -716,6 +756,32 @@ body.staging { overflow: hidden; }
             <button class="btn primary" id="exTap">Tap</button>
           </div>
           <input type="range" id="exBpm" min="40" max="240" step="1" value="90" aria-label="Tempo dell'esercizio">
+        </div>
+      </div>
+
+      <div class="pr">
+        <div class="pr-bar">
+          <button class="btn primary pr-toggle" id="prToggle" aria-pressed="false">Suona e ascolta</button>
+          <select class="field" id="prEx" aria-label="Esercizio"></select>
+          <div class="seg" role="group" aria-label="Sul manico">
+            <button id="prLabDeg" aria-pressed="true">Gradi</button>
+            <button id="prLabNote" aria-pressed="false">Note</button>
+          </div>
+        </div>
+        <p class="pr-goal" id="prGoal"></p>
+        <div class="pr-mode"><b id="prMode"></b><span id="prChar"></span></div>
+        <div class="pr-board" id="prBoard"></div>
+        <div class="pr-legend">
+          <span><i class="lg-root"></i>Fondamentale</span><span><i class="lg-tone"></i>Note dell'accordo</span>
+          <span><i class="lg-char"></i>Nota caratteristica</span><span><i class="lg-scale"></i>Altre note del modo</span>
+        </div>
+        <div class="pr-score" id="prScore"></div>
+        <p class="hint" id="prTotal"></p>
+        <ol class="pr-laps" id="prLaps"></ol>
+        <div class="pr-cal">
+          <button class="btn" id="prCal">Calibra il ritardo</button>
+          <span class="muted" id="prLat"></span>
+          <p class="hint" id="prCalMsg">Si fa una volta per dispositivo: serve a sapere su quale battito cade ogni nota.</p>
         </div>
       </div>
 
@@ -3125,7 +3191,7 @@ const Esercizio = (() => {
   // ===== Audio =====
   let ctx = null;
   // chi ascolta la chitarra riceve le note della base e i cambi di accordo, con l'istante in cui suonano
-  let noteHook = null;
+  let noteHook = null, renderHook = null;
   function ac() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
     if (ctx.state === "suspended") ctx.resume();
@@ -3484,6 +3550,7 @@ const Esercizio = (() => {
     $("exNowWhy").textContent = a.why;
     const next = btValid(), j = next.indexOf(st.sel), n = next.length > 1 ? analysis[next[(j + 1) % next.length]] : null;
     $("exNext").textContent = n ? `Poi: ${n.name}` : "";
+    if (renderHook) renderHook();
   }
   function renderAll() {
     analyzeProg();
@@ -3554,7 +3621,9 @@ const Esercizio = (() => {
   }
   return { init, start, stop, playing, loadSamples, ac, set onNote(f) { noteHook = f; },
     setProg(p) { st.prog = p; st.sel = 0; $("exProg").value = p; save(); renderAll(); },
-    get bpm() { return st.bpm; }, set bpm(v) { setBpm(v); } };
+    get bpm() { return st.bpm; }, set bpm(v) { setBpm(v); },
+    get current() { return analysis[st.sel]; }, get valid() { return btValid(); },
+    set onRender(f) { renderHook = f; }, noteName, parseDeg };
 })();
 
 // ---------- Ascolto della chitarra: prova del segnale ----------
@@ -3860,6 +3929,206 @@ const Ascolto = (() => {
   return { init, A, test1, test2, startNotes, endNotes, test4silent, test4play, startCapture, stopCapture, listDevices, feed: onBlock, yin, xcorr };
 })();
 
+// ---------- Suona e ascolta: la chitarra riconosciuta sopra la base dell'Esercizio ----------
+// Il manico mostra il modo dell'accordo in corso; ogni nota suonata si accende (verde nel modo, rossa fuori).
+// Il punteggio conta le note nel modo, le note dell'accordo, quelle sui battiti e la nota caratteristica.
+// Le note arrivano da Ascolto (ingresso USB del Matribox) e gli accordi da Esercizio, sullo stesso orologio audio:
+// a ogni nota si toglie il ritardo misurato con la calibrazione, così si sa su quale accordo e battito cadeva.
+const Pratica = (() => {
+  const OPEN = [64, 59, 55, 50, 45, 40];               // corde dall'alto (Mi cantino) al basso, accordatura standard
+  const FRETS = 15;
+  const S = { on: false, chords: [], lap: null, laps: [], total: null, ex: store.get("matribox.praticaEx", "free"),
+    labels: store.get("matribox.praticaLab", "deg"), lat: store.get("matribox.latenza", null), shown: null };
+  const pcOf = m => ((m % 12) + 12) % 12;
+  const semiOf = d => { const p = Esercizio.parseDeg(d); return p.semi; };
+  const DEG_CHROM = ["1", "♭2", "2", "♭3", "3", "4", "♯4", "5", "♭6", "6", "♭7", "7"];
+  const degLabel = d => d.replace(/b/g, "♭").replace(/#/g, "♯");
+  const NOTE_IT = ["Do", "Do♯", "Re", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
+
+  // nota caratteristica del modo: quella che lo distingue dai vicini
+  function charDeg(a) {
+    const n = a.scale.name || "";
+    const rules = [["frigio dominante", "3"], ["lidio dominante", "#4"], ["lidio aumentato", "#5"], ["misolidio ♭6", "b6"],
+      ["dorico ♭2", "b2"], ["minore armonica", "7"], ["minore melodica", "6"], ["locrio ♮2", "2"],
+      ["ionico", "7"], ["dorico", "6"], ["frigio", "b2"], ["lidio", "#4"], ["misolidio", "b7"], ["eolio", "b6"], ["locrio", "b5"],
+      ["esatonale", "#5"]];
+    const r = rules.find(([k]) => n.includes(k));
+    return r && a.scale.deg.includes(r[1]) ? r[1] : null;
+  }
+  // ruolo di una classe di altezza rispetto all'accordo: "root", "tone", "char", "scale" o null (fuori)
+  function info(a) {
+    const root = a.ch.pc, map = new Map();
+    a.scale.deg.forEach(d => map.set(pcOf(root + semiOf(d)), d));
+    const cd = charDeg(a), charPc = cd ? pcOf(root + semiOf(cd)) : null;
+    return { root, map, charPc, cd, tones: a.tones };
+  }
+  const roleOf = (I, pc) => pc === I.root ? "root" : I.tones.includes(pc) ? "tone" : pc === I.charPc ? "char" : I.map.has(pc) ? "scale" : null;
+
+  // ===== Manico =====
+  function buildBoard() {
+    const W = 1000, H = 250, x0 = 70, fw = (W - x0 - 20) / FRETS, y0 = 30, sh = 36;
+    const fx = f => f === 0 ? x0 - 30 : x0 + (f - 0.5) * fw;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="fb" role="img" aria-label="Manico con il modo dell'accordo in corso">`;
+    for (const f of [3, 5, 7, 9, 15]) svg += `<circle class="fb-mark" cx="${x0 + (f - 0.5) * fw}" cy="${y0 + sh * 2.5}" r="7"/>`;
+    svg += `<circle class="fb-mark" cx="${x0 + 11.5 * fw}" cy="${y0 + sh * 1.5}" r="7"/><circle class="fb-mark" cx="${x0 + 11.5 * fw}" cy="${y0 + sh * 3.5}" r="7"/>`;
+    for (let f = 0; f <= FRETS; f++) svg += `<line class="${f ? "fb-fret" : "fb-nut"}" x1="${x0 + f * fw}" y1="${y0 - 6}" x2="${x0 + f * fw}" y2="${y0 + sh * 5 + 6}"/>`;
+    OPEN.forEach((_, s) => svg += `<line class="fb-str" style="stroke-width:${0.8 + s * 0.35}" x1="${x0 - 46}" y1="${y0 + s * sh}" x2="${W - 20}" y2="${y0 + s * sh}"/>`);
+    for (let f = 1; f <= FRETS; f++) if ([3, 5, 7, 9, 12, 15].includes(f)) svg += `<text class="fb-num" x="${x0 + (f - 0.5) * fw}" y="${H - 8}">${f}</text>`;
+    OPEN.forEach((open, s) => { for (let f = 0; f <= FRETS; f++) {
+      const m = open + f;
+      svg += `<g class="fb-dot" data-m="${m}" data-pc="${pcOf(m)}" transform="translate(${fx(f)},${y0 + s * sh})"><circle r="14"/><text dy="0.35em"></text></g>`;
+    } });
+    svg += "</svg>";
+    $("prBoard").innerHTML = svg;
+  }
+  function paintBoard(a) {
+    if (!a || a.error) { $("prBoard").querySelectorAll(".fb-dot").forEach(g => g.setAttribute("class", "fb-dot")); return; }
+    const I = info(a);
+    $("prBoard").querySelectorAll(".fb-dot").forEach(g => {
+      const pc = +g.dataset.pc, role = roleOf(I, pc);
+      g.setAttribute("class", "fb-dot" + (role ? " fb-" + role : ""));
+      const d = I.map.get(pc);
+      g.querySelector("text").textContent = !role ? "" : S.labels === "deg" ? degLabel(d) : NOTE_IT[pc];
+    });
+    $("prMode").textContent = `${a.name}: ${a.mode}`;
+    $("prChar").textContent = I.cd ? `Nota caratteristica: ${degLabel(I.cd)} (${NOTE_IT[I.charPc]})` : "";
+  }
+  function flash(m, good) {
+    $("prBoard").querySelectorAll(`.fb-dot[data-m="${m}"]`).forEach(g => {
+      g.classList.remove("hit-in", "hit-out"); void g.getBoundingClientRect(); g.classList.add(good ? "hit-in" : "hit-out");
+      if (!good) g.querySelector("text").textContent = NOTE_IT[pcOf(m)];
+      clearTimeout(g._t); g._t = setTimeout(() => { g.classList.remove("hit-in", "hit-out"); if (!good) paintBoard(S.shown || Esercizio.current); }, 700);
+    });
+  }
+
+  // ===== Punteggio =====
+  const emptyScore = () => ({ notes: 0, inMode: 0, tone: 0, beats: 0, beatTone: 0, changes: 0, changeHit: 0, chordsSeen: 0, charHit: 0 });
+  function chordAt(t) { for (let i = S.chords.length - 1; i >= 0; i--) if (S.chords[i].t <= t) return S.chords[i]; return null; }
+  function onGuitar(n) {
+    const lat = (S.lat ?? 0) / 1000, t = n.t - lat, ch = chordAt(t);
+    if (!ch) return;
+    const I = ch.I, pc = pcOf(n.midi), role = roleOf(I, pc), beat = 60 / Esercizio.bpm;
+    const pos = (t - ch.t) / beat, frac = pos - Math.round(pos), onBeat = Math.abs(frac) < 0.15;
+    const lap = ch.sc || S.lap;                           // il giro a cui appartiene l'accordo, anche se è appena finito
+    for (const sc of [lap, S.total]) {
+      sc.notes++; if (role) sc.inMode++; if (role === "root" || role === "tone") sc.tone++;
+      if (onBeat) { sc.beats++; if (role === "root" || role === "tone") sc.beatTone++; }
+    }
+    if (!ch.first) {                                       // prima nota dopo il cambio di accordo
+      ch.first = true;
+      if (pos < 1.2) { ch.changeOk = role === "root" || role === "tone"; if (ch.changeOk) { lap.changeHit++; S.total.changeHit++; } }
+    }
+    if (pc === I.charPc && !ch.charOk) { ch.charOk = true; lap.charHit++; S.total.charHit++; }
+    flash(n.midi, !!role);
+    renderScore(); if (lap !== S.lap) renderLaps();
+  }
+  function onChord(e) {
+    if (e.part !== "chord") return;
+    const ch = { t: e.t, dur: e.dur, idx: e.idx, a: e.a, I: info(e.a) };
+    // un giro finisce quando la progressione torna al primo accordo
+    if (S.chords.length && e.idx === Esercizio.valid[0]) closeLap();
+    ch.sc = S.lap;
+    S.chords.push(ch); if (S.chords.length > 64) S.chords.shift();
+    for (const sc of [S.lap, S.total]) { sc.changes++; sc.chordsSeen++; }
+    setTimeout(() => { S.shown = e.a; paintBoard(e.a); }, Math.max(0, (e.t - Esercizio.ac().currentTime) * 1000));
+    renderScore();
+  }
+  function closeLap() {
+    if (S.lap && S.lap.changes) { S.laps.push(S.lap); if (S.laps.length > 8) S.laps.shift(); }
+    S.lap = emptyScore(); renderLaps();
+  }
+  const pct = (a, b) => b ? Math.round(a / b * 100) + "%" : "--";
+  function renderScore() {
+    const sc = S.lap || emptyScore(), tot = S.total || emptyScore();
+    const goal = {
+      free: [["Nel modo", pct(sc.inMode, sc.notes)], ["Note dell'accordo", pct(sc.tone, sc.notes)], ["Sui battiti, note dell'accordo", pct(sc.beatTone, sc.beats)]],
+      change: [["Cambi centrati", `${sc.changeHit} di ${sc.changes}`], ["Nel modo", pct(sc.inMode, sc.notes)], ["Note dell'accordo", pct(sc.tone, sc.notes)]],
+      char: [["Nota caratteristica", `${sc.charHit} di ${sc.chordsSeen}`], ["Nel modo", pct(sc.inMode, sc.notes)], ["Note dell'accordo", pct(sc.tone, sc.notes)]],
+    }[S.ex];
+    $("prScore").innerHTML = goal.map(([k, v]) => `<div class="pr-stat"><b>${v}</b><span>${k}</span></div>`).join("");
+    $("prTotal").textContent = tot.notes ? `Da quando hai iniziato: ${tot.notes} note, nel modo ${pct(tot.inMode, tot.notes)}, note dell'accordo ${pct(tot.tone, tot.notes)}.` : "";
+  }
+  function renderLaps() {
+    $("prLaps").innerHTML = S.laps.slice().reverse().map((l, i) => {
+      const main = S.ex === "change" ? `cambi ${l.changeHit}/${l.changes}` : S.ex === "char" ? `caratteristica ${l.charHit}/${l.chordsSeen}` : `nel modo ${pct(l.inMode, l.notes)}`;
+      return `<li><b>Giro ${S.laps.length - i}</b> ${l.notes} note, ${main}, note dell'accordo ${pct(l.tone, l.notes)}</li>`;
+    }).join("");
+  }
+  const GOALS = {
+    free: "Improvvisa: le note del modo si accendono di verde, quelle fuori di rosso.",
+    change: "A ogni cambio di accordo, la prima nota che suoni deve essere una nota dell'accordo (in chiaro sul manico).",
+    char: "Su ogni accordo suona almeno una volta la nota caratteristica del modo (cerchiata sul manico).",
+  };
+
+  // ===== Avvio e arresto =====
+  async function start() {
+    try {
+      if (!Ascolto.A.node) { await Ascolto.listDevices(); await Ascolto.startCapture(); }
+    } catch (e) { toast("Ingresso del Matribox non disponibile: " + e.message); return; }
+    S.on = true; S.chords = []; S.lap = emptyScore(); S.total = emptyScore(); S.laps = [];
+    Ascolto.A.notes = []; Ascolto.A.lastMidi = null; Ascolto.A.live = true; Ascolto.A.onNote = onGuitar;
+    Esercizio.onNote = onChord;
+    if (!Esercizio.playing()) Esercizio.start();
+    renderAll();
+    if (S.lat == null) toast("Consiglio: calibra il ritardo una volta, così il punteggio sui battiti è preciso");
+  }
+  function stop() {
+    S.on = false; Ascolto.A.live = false; Ascolto.A.onNote = null; Esercizio.onNote = null;
+    if (Esercizio.playing()) Esercizio.stop();
+    closeLap(); renderAll();
+  }
+
+  // ===== Calibrazione: 4 colpi di attacco, poi 8 colpi; tu suoni una nota su ognuno =====
+  async function calibrate() {
+    try { if (!Ascolto.A.node) { await Ascolto.listDevices(); await Ascolto.startCapture(); } }
+    catch (e) { toast("Ingresso del Matribox non disponibile: " + e.message); return; }
+    if (S.on) stop();
+    const c = Esercizio.ac(), beat = 0.6, t0 = c.currentTime + 0.5, times = [];
+    const click = (t, hi) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = hi ? 2600 : 2000;
+      o.connect(g).connect(c.destination); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03); o.start(t); o.stop(t + 0.05); };
+    for (let i = 0; i < 12; i++) { click(t0 + i * beat, i < 4); if (i >= 4) times.push(t0 + i * beat); }
+    $("prCalMsg").textContent = "Dopo i 4 colpi acuti, suona una nota qualsiasi su ognuno degli 8 colpi.";
+    const got = []; Ascolto.A.notes = []; Ascolto.A.lastMidi = null; Ascolto.A.live = true; Ascolto.A.onNote = n => got.push(n.t);
+    await new Promise(r => setTimeout(r, (0.5 + 12 * beat + 0.8) * 1000));
+    Ascolto.A.live = false; Ascolto.A.onNote = null;
+    const d = times.map(tc => { const t = got.find(x => x > tc - 0.05 && x < tc + 0.6); return t == null ? null : (t - tc) * 1000; }).filter(v => v != null);
+    if (d.length < 5) { $("prCalMsg").textContent = `Ho sentito solo ${d.length} note su 8: riprova suonando un po' più forte.`; return; }
+    d.sort((a, b) => a - b); const med = d[Math.floor(d.length / 2)];
+    const mad = d.map(v => Math.abs(v - med)).sort((a, b) => a - b)[Math.floor(d.length / 2)];
+    S.lat = Math.round(med); store.set("matribox.latenza", S.lat);
+    $("prCalMsg").textContent = `Ritardo misurato: ${S.lat} ms (scarto ±${Math.round(mad)} ms, ${d.length} note su 8). Salvato per questo dispositivo.`;
+    renderAll();
+  }
+
+  // ===== Interfaccia =====
+  function renderAll() {
+    $("prToggle").textContent = S.on ? "■ Smetti di ascoltare" : "Suona e ascolta";
+    $("prToggle").classList.toggle("on", S.on); $("prToggle").setAttribute("aria-pressed", String(S.on));
+    $("prGoal").textContent = GOALS[S.ex];
+    $("prLat").textContent = S.lat == null ? "Ritardo non calibrato" : `Ritardo: ${S.lat} ms`;
+    $("prLabDeg").setAttribute("aria-pressed", String(S.labels === "deg")); $("prLabNote").setAttribute("aria-pressed", String(S.labels === "note"));
+    paintBoard(S.on && S.shown ? S.shown : Esercizio.current);
+    renderScore(); renderLaps();
+  }
+  function init() {
+    buildBoard();
+    const sel = $("prEx");
+    [["free", "Improvvisazione libera"], ["change", "Nota dell'accordo a ogni cambio"], ["char", "Nota caratteristica del modo"]]
+      .forEach(([v, n]) => sel.append(new Option(n, v, false, v === S.ex)));
+    sel.onchange = () => { S.ex = sel.value; store.set("matribox.praticaEx", S.ex); renderAll(); };
+    $("prToggle").onclick = () => (S.on ? stop() : start());
+    $("prCal").onclick = calibrate;
+    $("prLabDeg").onclick = () => { S.labels = "deg"; store.set("matribox.praticaLab", "deg"); renderAll(); };
+    $("prLabNote").onclick = () => { S.labels = "note"; store.set("matribox.praticaLab", "note"); renderAll(); };
+    // quando cambia l'accordo scelto (o la progressione) e non si sta ascoltando, il manico lo segue
+    Esercizio.onRender = () => { if (!S.on || !Esercizio.playing()) paintBoard(Esercizio.current); };
+    // se la base si ferma dall'esterno, smetto di ascoltare
+    $("exPlay").addEventListener("click", () => setTimeout(() => { if (S.on && !Esercizio.playing()) stop(); }, 0));
+    renderAll();
+  }
+  return { init, S, onGuitar, onChord, start, stop, paintBoard };
+})();
+
 // ---------- Avvio ----------
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
 $("connectBtn").onclick = connect; $("connectBig").onclick = connect;
@@ -3883,7 +4152,7 @@ $("rcRefresh").onclick = () => listInputs().catch(e => { $("rcSrc").textContent 
 $("tuBtn").onclick = () => (tuner ? stopTuner() : startTuner());
 window.addEventListener("beforeunload", e => { if (dirty || takes.length) { e.preventDefault(); e.returnValue = ""; } });
 
-initDrum(); initFeatures(); initBase(); Esercizio.init(); Ascolto.init(); renderLibrary(); renderSetlist(); renderTakes();
+initDrum(); initFeatures(); initBase(); Esercizio.init(); Ascolto.init(); Pratica.init(); renderLibrary(); renderSetlist(); renderTakes();
 showView(store.get("matribox.view", "v-play"));
 // App installabile e offline (solo su https o localhost)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
