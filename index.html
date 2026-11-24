@@ -3666,10 +3666,18 @@ const Ascolto = (() => {
     const buf = A.ring.subarray(A.ring.length - 2048);
     let e = 0; for (let i = 1024; i < 2048; i++) e += buf[i] * buf[i]; e = Math.sqrt(e / 1024);
     // attacco: salto dell'energia ad alta frequenza (differenza fra campioni) nell'ultimo passo
-    let hf = 0; for (let i = 1537; i < 2048; i++) { const d = buf[i] - buf[i - 1]; hf += d * d; }
-    const onset = hf > (A.hfPrev || 0) * 2.5 && e > A.noiseFloor * 6 && e > 0.003;
+    let hf = 0, en = 0; for (let i = 1537; i < 2048; i++) { const d = buf[i] - buf[i - 1]; hf += d * d; en += buf[i] * buf[i]; }
+    en = Math.sqrt(en / 511);
+    // soglia: mai sotto -68 dB, e non più di 30 dB sotto le note appena suonate (il riferimento si dimezza in 1,5 s)
+    A.peak = Math.max(e, (A.peak || 0) * Math.pow(0.5, 512 / A.sr / 1.5));
+    const th = Math.max(0.0004, A.noiseFloor * 4, A.peak * 0.0316);
+    const onset = hf > (A.hfPrev || 0) * 2.5 && e > th;
     A.hfPrev = hf;
-    if (e < A.noiseFloor * 4 || e < 0.003) { A.stable = 0; A.lastMidi = null; liveNote(null); return; }
+    // attacco (plettrata o dito): l'energia dell'ultimo passo salta rispetto ai passi precedenti
+    const hist = A.hist || (A.hist = [1, 1, 1, 1]);
+    if ((en > 1.6 * Math.min(...hist) || onset) && en > th) A.attT = tEnd;
+    hist.shift(); hist.push(Math.max(en, 1e-7));
+    if (e < th) { A.stable = 0; A.lastMidi = null; liveNote(null); return; }
     // dimezzo la frequenza di campionamento (la chitarra non va oltre ~1,3 kHz di fondamentale): calcolo 4 volte più leggero
     const half = A.half || (A.half = new Float32Array(1024));
     for (let i = 0; i < 1024; i++) half[i] = (buf[2 * i] + buf[2 * i + 1]) * 0.5;
@@ -3679,7 +3687,8 @@ const Ascolto = (() => {
     if (midi < 38 || midi > 90) return;
     if (midi === A.cand) A.stable++; else { A.cand = midi; A.stable = 1; }
     liveNote(midi, r.f);
-    if (A.stable === 3 && (midi !== A.lastMidi || A.reattack)) {   // nota confermata dopo 3 passi (~32 ms)
+    // nota confermata dopo 3 passi (~32 ms), solo se è cominciata con un attacco: le corde che vibrano per simpatia non contano
+    if (A.stable === 3 && (midi !== A.lastMidi || A.reattack) && tEnd - (A.attT ?? -1) <= 0.15) {
       A.lastMidi = midi; A.reattack = false; A.confT = tEnd;
       const tNote = tEnd - 2048 / A.sr;
       A.notes.push({ midi, t: tNote, f: r.f });
