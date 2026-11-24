@@ -282,7 +282,15 @@ body.ab-a #chain, body.ab-a #detail, body.ab-a .globals, body.ab-a .history { op
 .ex-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; margin-top: 22px; }
 .ex-fields .btn { grid-column: 1 / -1; }
 .ex-mix { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 14px 18px; margin: 22px 0 8px; }
+.as-dev { display: grid; grid-template-columns: auto 1fr 1fr; gap: 8px; align-items: center; }
+.as-dev select[hidden] { display: none; }
+.as-live { display: grid; grid-template-columns: 180px 1fr; gap: 6px 18px; align-items: center; margin: 12px 0; }
+.as-live b { font: 700 40px/1 var(--display); margin-right: 10px; }
+.as-notes { grid-column: 1 / -1; margin: 0; min-height: 1.4em; font: 600 18px/1.4 var(--display); color: var(--brass); }
+.as-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.as-out { white-space: pre-wrap; background: var(--panel-2); border-radius: var(--r-md); padding: 12px 14px; font-size: 14px; color: var(--cream); }
 @media (max-width: 430px) {
+  .as-dev, .as-live { grid-template-columns: 1fr; }
   .tabs button { font-size: 10.5px; letter-spacing: -.01em; }
 }
 @media (max-width: 760px) {
@@ -722,6 +730,30 @@ body.staging { overflow: hidden; }
       <div class="ex-mix" id="exMix"></div>
       <p class="hint" id="exSnd"></p>
       <p class="hint">Il suono esce dal tablet: con il Matribox collegato lo senti nelle sue cuffie insieme alla chitarra. Tempo, stile e volumi si cambiano anche mentre suona; tocca un accordo per ripartire da lì.</p>
+      <details class="diag as-panel" id="asPanel">
+        <summary>Ascolto della chitarra (prova del segnale)</summary>
+        <p class="hint">Prove per preparare il riconoscimento delle note. Collega il Matribox, scegli il preset DI (P81) e tocca Prepara: il browser chiede di usare il microfono.</p>
+        <div class="as-dev">
+          <button class="btn primary" id="asStart">Prepara</button>
+          <select class="field" id="asIn" aria-label="Ingresso audio"><option value="">Tocca Prepara per trovare l'ingresso</option></select>
+          <select class="field" id="asOut" aria-label="Uscita audio" hidden></select>
+        </div>
+        <p class="hint" id="asMsg"></p>
+        <div class="as-live">
+          <div><b id="asNote">--</b><span class="muted" id="asHz"></span></div>
+          <div class="meter"><div id="asMeter"></div></div>
+          <p class="as-notes" id="asNotes"></p>
+        </div>
+        <div class="as-btns">
+          <button class="btn" id="asT1">1 · Segnale USB</button>
+          <button class="btn" id="asT2">2 · Ritardo</button>
+          <button class="btn" id="asT3">3 · Ascolta un giro di note</button>
+          <button class="btn" id="asT4a">4a · Base sola</button>
+          <button class="btn" id="asT4b">4b · Improvvisa sulla base</button>
+          <button class="btn" id="asCopy">Copia risultati</button>
+        </div>
+        <pre class="as-out" id="asOut2" hidden></pre>
+      </details>
       <details class="diag">
         <summary>Crediti dei suoni</summary>
         <p class="hint">Batteria: Virtuosity Drums di Versilian Studios e Karoryfer Samples (CC0).
@@ -3092,6 +3124,8 @@ const Esercizio = (() => {
 
   // ===== Audio =====
   let ctx = null;
+  // chi ascolta la chitarra riceve le note della base e i cambi di accordo, con l'istante in cui suonano
+  let noteHook = null;
   function ac() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
     if (ctx.state === "suspended") ctx.resume();
@@ -3188,6 +3222,7 @@ const Esercizio = (() => {
     if (inst === "o") openHat = { src, g, t, gain };
   }
   function bassAt(midi, t, dur, dest) {
+    if (noteHook) noteHook({ part: "bass", midi, t, dur });
     if (!SMP.bass) {                           // riserva: basso sintetizzato
       const c = ac(), o1 = c.createOscillator(), o2 = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
       o1.type = "sawtooth"; o1.frequency.value = hz(midi); o2.type = "sine"; o2.frequency.value = hz(midi);
@@ -3203,6 +3238,7 @@ const Esercizio = (() => {
     play(buf, t, 0.9, dest, Math.pow(2, (midi - s.midi) / 12), t + Math.max(0.08, dur), 0.07);
   }
   function pianoAt(midi, t, gain, dur, dest, release = 0.35) {
+    if (noteHook) noteHook({ part: "piano", midi, t, dur: dur || 2 });
     if (!SMP.piano) {                          // riserva: corda pizzicata semplice
       const c = ac(), o = c.createOscillator(), g = c.createGain();
       o.type = "triangle"; o.frequency.value = hz(midi); o.connect(g).connect(dest);
@@ -3379,6 +3415,7 @@ const Esercizio = (() => {
       const mk = [st.melody, st.melSeed, L, BT.valid.map(i => analysis[i].name + analysis[i].mode).join()].join("|");
       if (mk !== BT.melKey) { BT.melKey = mk; BT.mel = st.melody === "off" ? null : makeMelody(BT.valid, L, st.melody, st.melSeed); }
       const idx = BT.valid[BT.ci];
+      if (noteHook) noteHook({ part: "chord", idx, a, t, dur: L * s16 });
       setTimeout(() => { if (BT.timer) { st.sel = idx; renderChips(); renderNow(); } }, Math.max(0, (t - c.currentTime) * 1000));
     }
     const tt = t + swingOff(BT.step, style.swing, s16), w = BT.within;
@@ -3515,7 +3552,303 @@ const Esercizio = (() => {
     }, true);
     renderAll();
   }
-  return { init, stop, playing, loadSamples };
+  return { init, start, stop, playing, loadSamples, ac, set onNote(f) { noteHook = f; },
+    setProg(p) { st.prog = p; st.sel = 0; $("exProg").value = p; save(); renderAll(); },
+    get bpm() { return st.bpm; }, set bpm(v) { setBpm(v); } };
+})();
+
+// ---------- Ascolto della chitarra: prova del segnale ----------
+// Cattura l'ingresso USB del Matribox nello stesso contesto audio dell'Esercizio, così i tempi di ciò che
+// l'app suona e di ciò che torna indietro sono sulla stessa linea. Quattro prove:
+//   1 segnale USB: la base suonata dall'app torna nell'ingresso? con che ritardo e livello?
+//   2 ritardo: 8 colpi, tu suoni su ognuno; misura il ritardo complessivo (uscita + mano + ingresso)
+//   3 note: riconoscimento delle note singole (YIN), giri di pentatonica di La minore
+//   4 con la base: base sola a chitarra ferma (note fantasma?) e poi improvvisazione
+const Ascolto = (() => {
+  const A = { stream: null, src: null, node: null, sr: 48000, ch: 0,
+    rec: null,                    // registrazione in corso: { t0, chans: [[Float32Array...]] }
+    ring: new Float32Array(4096), ringN: 0, hopAcc: 0,
+    live: false, notes: [], lastMidi: null, stable: 0, envPrev: 0, noiseFloor: 1e-4, results: [] };
+  const NAMES = ["Do","Do♯","Re","Mi♭","Mi","Fa","Fa♯","Sol","Sol♯","La","Si♭","Si"];
+  const nm = m => NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
+  const ctx = () => Esercizio.ac();
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const db = x => (20 * Math.log10(Math.max(1e-9, x))).toFixed(1);
+
+  // ----- dispositivi -----
+  async function listDevices() {
+    const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+    tmp.getTracks().forEach(t => t.stop());
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const fill = (sel, kind, pref) => {
+      const prev = sel.value; sel.innerHTML = "";
+      devs.filter(d => d.kind === kind && d.deviceId !== "communications").forEach(d => sel.append(new Option(d.label || "Senza nome", d.deviceId)));
+      const mb = [...sel.options].find(o => /matribox/i.test(o.textContent));
+      if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev; else if (mb) sel.value = mb.value; else if (pref) sel.value = pref;
+      return !!mb;
+    };
+    const inOk = fill($("asIn"), "audioinput");
+    const outSel = $("asOut");
+    if ("setSinkId" in AudioContext.prototype) { outSel.hidden = false; fill(outSel, "audiooutput", "default"); } else outSel.hidden = true;
+    say(inOk ? "Ingresso del Matribox trovato." : "Ingresso del Matribox non trovato: sceglilo dal menu.");
+  }
+  async function applyOutput() {
+    const c = ctx(), id = $("asOut").value;
+    if ("setSinkId" in c && !$("asOut").hidden) { try { await c.setSinkId(id === "default" ? "" : id); } catch (e) { say("Uscita non cambiata: " + e.message); } }
+  }
+
+  // ----- cattura -----
+  const WORKLET = `class Cap extends AudioWorkletProcessor {
+    constructor(){ super(); this.buf=null; this.n=0; this.t=0; }
+    process(inputs){ const i=inputs[0]; if(!i||!i.length) return true;
+      if(!this.buf){ this.buf=i.map(()=>new Float32Array(1024)); this.n=0; }
+      if(this.n===0) this.t=currentTime;
+      for(let c=0;c<i.length&&c<this.buf.length;c++) this.buf[c].set(i[c], this.n);
+      this.n+=i[0].length;
+      if(this.n>=1024){ this.port.postMessage({t:this.t, ch:this.buf}); this.buf=null; }
+      return true; } }
+  registerProcessor('matribox-cap', Cap);`;
+  async function startCapture() {
+    if (A.node) return;
+    const c = ctx();
+    await applyOutput();
+    if (!A.wl) { await c.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: "text/javascript" }))); A.wl = true; }
+    const id = $("asIn").value;
+    A.stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
+      echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } } });
+    const tr = A.stream.getAudioTracks()[0], s = tr.getSettings();
+    A.src = c.createMediaStreamSource(A.stream);
+    A.node = new AudioWorkletNode(c, "matribox-cap", { numberOfInputs: 1, numberOfOutputs: 0, channelCount: s.channelCount || 2, channelCountMode: "explicit" });
+    A.sr = c.sampleRate; A.ch = s.channelCount || 1;
+    A.node.port.onmessage = e => onBlock(e.data);
+    A.src.connect(A.node);
+    say(`Ascolto: ${tr.label}, ${A.ch} canali, ${A.sr} Hz, ritardo dichiarato dell'ingresso ${s.latency != null ? Math.round(s.latency * 1000) + " ms" : "non indicato"}, uscita ${Math.round((c.outputLatency || 0) * 1000)} ms + ${Math.round(c.baseLatency * 1000)} ms.`);
+  }
+  function stopCapture() {
+    if (A.src) A.src.disconnect();
+    if (A.stream) A.stream.getTracks().forEach(t => t.stop());
+    A.node = A.src = A.stream = null; A.live = false;
+  }
+
+  function onBlock({ t, ch }) {
+    if (A.rec) { A.rec.blocks.push({ t, ch: ch.map(x => x.slice()) }); }
+    // segnale mono per il riconoscimento: somma dei canali
+    const n = ch[0].length, mono = new Float32Array(n);
+    for (const x of ch) for (let i = 0; i < n; i++) mono[i] += x[i] / ch.length;
+    let pk = 0; for (const v of mono) pk = Math.max(pk, Math.abs(v));
+    meter(pk);
+    if (!A.live) return;
+    for (let i = 0; i < n; i += 512) {                                    // passi di 512 campioni (~11 ms)
+      const part = mono.subarray(i, i + 512);
+      A.ring.copyWithin(0, part.length); A.ring.set(part, A.ring.length - part.length);
+      A.ringN = Math.min(A.ring.length, A.ringN + part.length);
+      if (A.ringN >= 2048) analyzeFrame(t + (i + part.length) / A.sr);
+    }
+  }
+
+  // ----- riconoscimento: YIN -----
+  function yin(buf, sr) {
+    const W = Math.min(384, buf.length >> 1), tauMin = Math.floor(sr / 1400), tauMax = Math.min(Math.floor(sr / 72), buf.length - W - 1);
+    // differenza e media cumulativa calcolate insieme: ci si ferma appena passato il primo minimo sotto soglia
+    const dp = new Float32Array(tauMax + 2); dp[0] = 1;
+    let run = 0, best = -1;
+    for (let tau = 1; tau <= tauMax; tau++) {
+      let s = 0; for (let i = 0; i < W; i++) { const df = buf[i] - buf[i + tau]; s += df * df; }
+      run += s; dp[tau] = run ? s * tau / run : 1;
+      if (best < 0 && tau > tauMin && dp[tau - 1] < 0.15 && dp[tau] >= dp[tau - 1]) { best = tau - 1; dp[tau + 1] = dp[tau]; break; }
+    }
+    if (best < 0) return null;
+    const a = dp[best - 1] ?? dp[best], b = dp[best], c = dp[best + 1] ?? dp[best];
+    const sh = (a - c) / (2 * (a - 2 * b + c) || 1);
+    return { f: sr / (best + (isFinite(sh) ? sh : 0)), ap: b };
+  }
+  function analyzeFrame(tEnd) {
+    const buf = A.ring.subarray(A.ring.length - 2048);
+    let e = 0; for (let i = 1024; i < 2048; i++) e += buf[i] * buf[i]; e = Math.sqrt(e / 1024);
+    // attacco: salto dell'energia ad alta frequenza (differenza fra campioni) nell'ultimo passo
+    let hf = 0; for (let i = 1537; i < 2048; i++) { const d = buf[i] - buf[i - 1]; hf += d * d; }
+    const onset = hf > (A.hfPrev || 0) * 2.5 && e > A.noiseFloor * 6 && e > 0.003;
+    A.hfPrev = hf;
+    if (e < A.noiseFloor * 4 || e < 0.003) { A.stable = 0; A.lastMidi = null; liveNote(null); return; }
+    // dimezzo la frequenza di campionamento (la chitarra non va oltre ~1,3 kHz di fondamentale): calcolo 4 volte più leggero
+    const half = A.half || (A.half = new Float32Array(1024));
+    for (let i = 0; i < 1024; i++) half[i] = (buf[2 * i] + buf[2 * i + 1]) * 0.5;
+    const r = yin(half, A.sr / 2);
+    if (!r) { A.stable = 0; return; }
+    const midi = Math.round(69 + 12 * Math.log2(r.f / 440));
+    if (midi < 38 || midi > 90) return;
+    if (midi === A.cand) A.stable++; else { A.cand = midi; A.stable = 1; }
+    liveNote(midi, r.f);
+    if (A.stable === 3 && (midi !== A.lastMidi || A.reattack)) {   // nota confermata dopo 3 passi (~32 ms)
+      A.lastMidi = midi; A.reattack = false; A.confT = tEnd;
+      const tNote = tEnd - 2048 / A.sr;
+      A.notes.push({ midi, t: tNote, f: r.f });
+      if (A.onNote) A.onNote({ midi, t: tNote });
+      renderNotes();
+    }
+    // stessa nota suonata di nuovo: vale solo un attacco ben dopo la conferma (non la coda dell'attacco stesso)
+    if (onset && midi === A.lastMidi && tEnd - (A.confT || 0) > 0.09) { A.reattack = true; A.stable = 0; }
+  }
+
+  // ----- strumenti per le prove -----
+  async function recordFor(sec) {
+    A.rec = { blocks: [] }; await sleep(sec * 1000); const r = A.rec; A.rec = null;
+    const nch = r.blocks[0] ? r.blocks[0].ch.length : 1, len = r.blocks.reduce((s, b) => s + b.ch[0].length, 0);
+    const chans = Array.from({ length: nch }, () => new Float32Array(len));
+    let o = 0; for (const b of r.blocks) { b.ch.forEach((x, c) => chans[c].set(x, o)); o += b.ch[0].length; }
+    return { t0: r.blocks[0] ? r.blocks[0].t : 0, chans };
+  }
+  function fft(re, im) {                                    // radice 2, sul posto
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) { let cr = 1, ci = 0;
+        for (let j = 0; j < len / 2; j++) { const a = i + j, b = a + len / 2, xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } }
+  }
+  function xcorr(x, ref) {                                  // ritardo (campioni) e coefficiente normalizzato
+    let n = 1; while (n < x.length + ref.length) n <<= 1;
+    const ar = new Float32Array(n), ai = new Float32Array(n), br = new Float32Array(n), bi = new Float32Array(n);
+    ar.set(x); br.set(ref); fft(ar, ai); fft(br, bi);
+    for (let i = 0; i < n; i++) { const r = ar[i] * br[i] + ai[i] * bi[i], im = ai[i] * br[i] - ar[i] * bi[i]; ar[i] = r; ai[i] = -im; }
+    fft(ar, ai);                                            // ifft via coniugato
+    let best = 0, lag = 0; for (let i = 0; i < x.length; i++) { const v = ar[i] / n; if (v > best) { best = v; lag = i; } }
+    let ex = 0, er = 0; for (let i = 0; i < ref.length; i++) { er += ref[i] * ref[i]; const v = x[lag + i] || 0; ex += v * v; }
+    return { lag, coef: best / Math.sqrt(ex * er || 1), gain: best / (er || 1) };
+  }
+
+  // ----- Prova 1: la base torna nell'ingresso? -----
+  async function test1() {
+    await startCapture(); const c = ctx();
+    const sr = c.sampleRate, dur = 1.6, n = Math.floor(sr * dur), ref = new Float32Array(n);
+    let ph = 0; for (let i = 0; i < n; i++) {                 // sweep da 100 Hz a 5 kHz, -12 dB
+      const f = 100 * Math.pow(50, i / n); ph += 2 * Math.PI * f / sr;
+      const env = Math.min(1, i / (0.01 * sr), (n - i) / (0.01 * sr)); ref[i] = 0.25 * env * Math.sin(ph);
+    }
+    const buf = c.createBuffer(1, n, sr); buf.copyToChannel(ref, 0);
+    say("Prova 1: suono di prova in corso, chitarra ferma…");
+    const recP = recordFor(dur + 1.2);
+    await sleep(250);
+    const src = c.createBufferSource(); src.buffer = buf; src.connect(c.destination);
+    const tPlay = c.currentTime + 0.05; src.start(tPlay);
+    const rec = await recP;
+    const lines = ["PROVA 1 · base che torna nell'ingresso"];
+    rec.chans.forEach((x, ci) => {
+      let pk = 0, rms = 0; for (const v of x) { pk = Math.max(pk, Math.abs(v)); rms += v * v; } rms = Math.sqrt(rms / x.length);
+      const r = xcorr(x, ref), delay = (rec.t0 + r.lag / sr - tPlay) * 1000;
+      const present = r.coef > 0.25;
+      lines.push(`canale ${ci + 1}: picco ${db(pk)} dB, rms ${db(rms)} dB, somiglianza col suono di prova ${r.coef.toFixed(2)}` +
+        (present ? ` → PRESENTE, ritardo ${delay.toFixed(1)} ms, livello ${db(Math.abs(r.gain))} dB` : " → non presente"));
+    });
+    // rumore di fondo dell'ingresso (prima del suono)
+    const pre = rec.chans[0].subarray(0, Math.floor(0.2 * sr)); let nf = 0; for (const v of pre) nf += v * v; nf = Math.sqrt(nf / pre.length);
+    A.noiseFloor = Math.max(1e-4, nf);
+    lines.push(`rumore di fondo ${db(nf)} dB`);
+    report(lines);
+  }
+
+  // ----- Prova 2: ritardo complessivo -----
+  async function test2() {
+    await startCapture(); const c = ctx(), sr = c.sampleRate, beat = 0.6;
+    const click = (t, hi) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = hi ? 2600 : 2000;
+      o.connect(g).connect(c.destination); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03); o.start(t); o.stop(t + 0.05); };
+    say("Prova 2: 4 colpi di attacco, poi suona una plettrata stoppata su ognuno degli 8 colpi successivi.");
+    const t0 = c.currentTime + 0.4, times = [];
+    for (let i = 0; i < 12; i++) { click(t0 + i * beat, i < 4); if (i >= 4) times.push(t0 + i * beat); }
+    const rec = await recordFor(0.4 + 12 * beat + 0.8);
+    // inviluppo passa-basso (sotto ~1,5 kHz) per non contare i colpi dell'app
+    const x = rec.chans.reduce((m, ch) => { ch.forEach((v, i) => m[i] += v / rec.chans.length); return m; }, new Float32Array(rec.chans[0].length));
+    let lp = 0; const k = 1 - Math.exp(-2 * Math.PI * 1500 / sr), hop = Math.floor(sr * 0.002), env = [];
+    for (let i = 0, acc = 0; i < x.length; i++) { lp += k * (x[i] - lp); acc += lp * lp; if ((i + 1) % hop === 0) { env.push(Math.sqrt(acc / hop)); acc = 0; } }
+    const tOf = j => rec.t0 + j * hop / sr, offs = [];
+    for (const tc of times) {
+      const a = Math.floor((tc - 0.25 - rec.t0) * sr / hop), b = Math.floor((tc + 0.3 - rec.t0) * sr / hop);
+      let base = Infinity; for (let j = Math.max(0, a); j < a + 25 && j < env.length; j++) base = Math.min(base, env[j]);
+      let hit = -1; for (let j = Math.max(1, a); j < b && j < env.length; j++) if (env[j] > Math.max(base * 6, 0.004)) { hit = j; break; }
+      if (hit >= 0) offs.push((tOf(hit) - tc) * 1000);
+    }
+    const s = [...offs].sort((p, q) => p - q), med = s.length ? s[Math.floor(s.length / 2)] : NaN;
+    const mad = s.length ? [...s.map(v => Math.abs(v - med))].sort((p, q) => p - q)[Math.floor(s.length / 2)] : NaN;
+    report([`PROVA 2 · ritardo complessivo`, `colpi riconosciuti ${offs.length} di 8: ${offs.map(v => v.toFixed(0)).join(", ")} ms`,
+      `mediana ${med.toFixed(1)} ms, scarto tipico ${mad.toFixed(1)} ms`]);
+    A.latency = med;
+  }
+
+  // ----- Prova 3: note -----
+  const PENTA = [9, 0, 2, 4, 7];
+  function startNotes(label) { A.notes = []; A.lastMidi = null; A.stable = 0; A.live = true; A.runLabel = label; renderNotes(); say(`${label}: suona, poi tocca Fine giro.`); }
+  function endNotes() {
+    A.live = false; liveNote(null);
+    const ns = A.notes, inP = ns.filter(n => PENTA.includes(((n.midi % 12) + 12) % 12)).length;
+    report([`PROVA 3 · ${A.runLabel}`, `note riconosciute ${ns.length}, nella pentatonica di La minore ${inP} (${ns.length ? Math.round(inP / ns.length * 100) : 0}%)`,
+      `sequenza: ${ns.map(n => nm(n.midi)).join(" ")}`]);
+  }
+
+  // ----- Prova 4: con la base dell'Esercizio -----
+  async function test4silent() {
+    await startCapture();
+    const backing = [];
+    Esercizio.onNote = e => { if (e.part !== "chord") backing.push(e); };
+    Esercizio.setProg("Lam Fa Do Sol"); if (!Esercizio.playing()) Esercizio.start();
+    say("Prova 4a: base sola per 10 secondi, chitarra ferma.");
+    A.notes = []; A.lastMidi = null; A.live = true;
+    await sleep(10000);
+    A.live = false; Esercizio.onNote = null; Esercizio.stop();
+    const lat = (A.latency ?? 0) / 1000;
+    const ghost = A.notes.filter(n => backing.some(b => n.t >= b.t + lat - 0.05 && n.t <= b.t + lat + b.dur && ((b.midi - n.midi) % 12 === 0)));
+    report([`PROVA 4a · base sola, chitarra ferma`, `note sentite dall'ingresso ${A.notes.length}, di cui uguali a note della base ${ghost.length}`,
+      A.notes.length ? `sequenza: ${A.notes.slice(0, 40).map(n => nm(n.midi)).join(" ")}` : "nessuna nota: l'ingresso non sente la base"]);
+  }
+  let chords = [];
+  async function test4play() {
+    await startCapture();
+    chords = []; const backing = [];
+    Esercizio.onNote = e => { if (e.part === "chord") chords.push(e); else backing.push(e); };
+    Esercizio.setProg("Lam Fa Do Sol"); if (!Esercizio.playing()) Esercizio.start();
+    A.notes = []; A.lastMidi = null; A.live = true; A.runLabel = "4b"; renderNotes();
+    say("Prova 4b: improvvisa in La minore sulla base, poi tocca Fine.");
+    A.end4 = () => {
+      A.live = false; Esercizio.onNote = null; Esercizio.stop();
+      const lat = (A.latency ?? 0) / 1000;
+      let inMode = 0, tone = 0;
+      for (const n of A.notes) {
+        const t = n.t - lat, ch = [...chords].reverse().find(c => c.t <= t); if (!ch) continue;
+        const pc = ((n.midi % 12) + 12) % 12, scale = ch.a.scale.deg.map(d => (ch.a.ch.pc + parseDegSemi(d)) % 12);
+        if (scale.includes(pc)) inMode++; if (ch.a.tones.includes(pc)) tone++;
+      }
+      const ghost = A.notes.filter(n => backing.some(b => Math.abs(n.t - (b.t + lat)) < 0.03 && ((b.midi - n.midi) % 12 === 0))).length;
+      report([`PROVA 4b · improvvisazione sulla base`, `note riconosciute ${A.notes.length}, nel modo dell'accordo ${inMode}, note dell'accordo ${tone}`,
+        `note che cadono insieme a una uguale della base (possibili fantasmi) ${ghost}`, `sequenza: ${A.notes.slice(0, 60).map(n => nm(n.midi)).join(" ")}`]);
+    };
+  }
+  const parseDegSemi = d => { const m = d.match(/^([b#]*)(\d+)$/); let acc = 0; for (const c of m[1]) acc += c === "#" ? 1 : -1; return ([0,2,4,5,7,9,11][(+m[2] - 1) % 7] + acc + 12) % 12; };
+
+  // ----- interfaccia -----
+  function say(t) { $("asMsg").textContent = t; }
+  function report(lines) { A.results.push(lines.join("\n")); $("asOut2").textContent = A.results.join("\n\n"); $("asOut2").hidden = false; log(lines.join(" | ")); }
+  let meterT = 0;
+  function meter(pk) { const now = performance.now(); if (now - meterT < 50) return; meterT = now; const el = $("asMeter"); if (el) el.style.width = Math.min(100, Math.max(0, (60 + 20 * Math.log10(pk + 1e-9)) / 60 * 100)) + "%"; }
+  let lastLive = 0;
+  function liveNote(midi, f) {
+    const now = performance.now(); if (now - lastLive < 60 && midi != null) return; lastLive = now;
+    $("asNote").textContent = midi == null ? "--" : nm(midi); $("asHz").textContent = f ? f.toFixed(1) + " Hz" : "";
+  }
+  function renderNotes() { $("asNotes").textContent = A.notes.slice(-24).map(n => nm(n.midi)).join("  "); }
+
+  function init() {
+    $("asStart").onclick = () => listDevices().catch(e => say("Audio non disponibile: " + e.message));
+    $("asIn").onchange = () => { stopCapture(); };
+    $("asOut").onchange = applyOutput;
+    const guard = f => async () => { try { await f(); } catch (e) { say("Errore: " + e.message); } };
+    $("asT1").onclick = guard(test1);
+    $("asT2").onclick = guard(test2);
+    $("asT3").onclick = guard(async () => { await startCapture(); if (A.live) endNotes(); else startNotes(`giro ${A.results.filter(r => r.startsWith("PROVA 3")).length + 1}`); $("asT3").textContent = A.live ? "Fine giro" : "3 · Ascolta un giro di note"; });
+    $("asT4a").onclick = guard(test4silent);
+    $("asT4b").onclick = guard(async () => { if (A.end4) { const f = A.end4; A.end4 = null; f(); $("asT4b").textContent = "4b · Improvvisa sulla base"; return; } await test4play(); $("asT4b").textContent = "Fine"; });
+    $("asCopy").onclick = () => navigator.clipboard.writeText(A.results.join("\n\n")).then(() => toast("Risultati copiati"), () => toast("Copia non riuscita"));
+  }
+  return { init, A, test1, test2, startNotes, endNotes, test4silent, test4play, startCapture, stopCapture, listDevices, feed: onBlock, yin, xcorr };
 })();
 
 // ---------- Avvio ----------
@@ -3541,7 +3874,7 @@ $("rcRefresh").onclick = () => listInputs().catch(e => { $("rcSrc").textContent 
 $("tuBtn").onclick = () => (tuner ? stopTuner() : startTuner());
 window.addEventListener("beforeunload", e => { if (dirty || takes.length) { e.preventDefault(); e.returnValue = ""; } });
 
-initDrum(); initFeatures(); initBase(); Esercizio.init(); renderLibrary(); renderSetlist(); renderTakes();
+initDrum(); initFeatures(); initBase(); Esercizio.init(); Ascolto.init(); renderLibrary(); renderSetlist(); renderTakes();
 showView(store.get("matribox.view", "v-play"));
 // App installabile e offline (solo su https o localhost)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
